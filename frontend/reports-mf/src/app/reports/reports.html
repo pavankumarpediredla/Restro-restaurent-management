@@ -1,0 +1,49 @@
+<div class="reports">
+  <div class="page-head">
+    <h2>Reports</h2>
+    <p>Monthly revenue trend and best-selling items.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h3>Revenue trend</h3>
+      <span class="panel-sub">in ₹’000</span>
+    </div>
+    <div class="bar-chart">
+      @for (m of monthlyRevenue; track m.month) {
+        <div class="bar-col">
+          <div class="bar" [style.height.%]="(m.value / maxRevenue) * 100">
+            <span class="bar-value">{{ m.value }}</span>
+          </div>
+          <span class="bar-label">{{ m.month }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h3>Top selling items</h3>
+    </div>
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Category</th>
+          <th>Units sold</th>
+          <th>Revenue</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of topItems; track row.item) {
+          <tr>
+            <td>{{ row.item }}</td>
+            <td class="muted">{{ row.category }}</td>
+            <td class="mono">{{ row.unitsSold }}</td>
+            <td class="mono">{{ row.revenue }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

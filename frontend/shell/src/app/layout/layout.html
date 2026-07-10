@@ -1,0 +1,58 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-mark">R</span>
+      <span class="logo-word">Restro</span>
+    </div>
+
+    <nav>
+      @for (item of nav; track item.path) {
+        @if (item.disabled) {
+          <span class="nav-item disabled" [title]="item.label + ' — coming soon'">
+            <span class="nav-icon">{{ item.icon }}</span>
+            {{ item.label }}
+          </span>
+        } @else {
+          <a
+            class="nav-item"
+            [routerLink]="item.path"
+            routerLinkActive="active"
+          >
+            <span class="nav-icon">{{ item.icon }}</span>
+            {{ item.label }}
+          </a>
+        }
+      }
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="search">
+        <span class="search-icon">⌕</span>
+        <input type="text" placeholder="Search orders, items, customers…" />
+      </div>
+
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Notifications">🔔</button>
+        <div class="profile">
+          <span class="avatar">{{ auth.currentUser()?.name?.charAt(0) || '?' }}</span>
+          <div class="profile-info">
+            <span class="profile-name">{{ auth.currentUser()?.name || 'Guest' }}</span>
+            <span class="profile-role">{{ auth.currentUser()?.role || '' }}</span>
+          </div>
+          <button class="logout-btn" (click)="logout()" title="Log out">⏻</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <router-outlet></router-outlet>
+    </main>
+
+    <footer class="app-footer">
+      <span>Restro POS · v0.1.0</span>
+      <span>&copy; {{ year }} Restro. All systems normal.</span>
+    </footer>
+  </div>
+</div>

@@ -1,0 +1,41 @@
+<div class="login-page">
+  <form class="login-card" (ngSubmit)="onSubmit()" #loginForm="ngForm">
+    <div class="brand">
+      <span class="brand-mark">R</span>
+      <h1>Restro POS</h1>
+    </div>
+    <p class="subtitle">Sign in to manage your restaurant</p>
+
+    <label>
+      Email
+      <input
+        type="email"
+        name="email"
+        [(ngModel)]="email"
+        placeholder="you@restro.com"
+        required
+      />
+    </label>
+
+    <label>
+      Password
+      <input
+        type="password"
+        name="password"
+        [(ngModel)]="password"
+        placeholder="••••••••"
+        required
+      />
+    </label>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <button type="submit" [disabled]="loading() || loginForm.invalid">
+      {{ loading() ? 'Signing in…' : 'Sign in' }}
+    </button>
+
+    <p class="hint">Any email + password works for now — this is a mock login.</p>
+  </form>
+</div>
