@@ -1,0 +1,125 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h2>Billing</h2>
+      <p>Create invoices from real orders and track payment status.</p>
+    </div>
+    <button type="button" class="ghost-btn" (click)="load()" [disabled]="loading">Refresh</button>
+  </header>
+
+  @if (error) {
+    <div class="alert">{{ error }}</div>
+  }
+
+  <div class="grid">
+    <form class="panel form" (ngSubmit)="save()">
+      <h3>Create invoice</h3>
+
+      <label>
+        Order
+        <select name="orderId" [(ngModel)]="form.orderId" required>
+          @for (order of availableOrders; track order.id) {
+            <option [ngValue]="order.id">
+              {{ order.orderNumber }} - {{ order.customerName || 'Walk-in' }} - {{ order.totalAmount | currency:'INR':'symbol-narrow' }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Tax amount
+        <input type="number" name="taxAmount" [(ngModel)]="form.taxAmount" min="0" step="0.01" />
+      </label>
+
+      <label>
+        Discount amount
+        <input type="number" name="discountAmount" [(ngModel)]="form.discountAmount" min="0" step="0.01" />
+      </label>
+
+      <label>
+        Notes
+        <textarea name="notes" [(ngModel)]="form.notes" rows="4"></textarea>
+      </label>
+
+      <button type="submit" class="primary-btn" [disabled]="saving">
+        {{ saving ? 'Saving...' : 'Generate invoice' }}
+      </button>
+    </form>
+
+    <div class="panel table-panel">
+      <div class="table-head">
+        <h3>Invoices</h3>
+        <span>{{ invoices.length }} records</span>
+      </div>
+
+      @if (loading) {
+        <p class="muted">Loading billing records...</p>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Order</th>
+              <th>Customer</th>
+              <th>Status</th>
+              <th>Total</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (invoice of invoices; track invoice.id) {
+              <tr>
+                <td>
+                  <strong>{{ invoice.invoiceNumber }}</strong>
+                  <div class="muted">{{ invoice.createdAt | date: 'medium' }}</div>
+                </td>
+                <td>
+                  <div class="mono">{{ invoice.orderNumber }}</div>
+                  <div class="muted">Order #{{ invoice.orderId }}</div>
+                </td>
+                <td>{{ invoice.customerName || 'Walk-in' }}</td>
+                <td>
+                  <span class="pill" [class.off]="invoice.status !== 'PAID'">
+                    {{ invoice.status }}
+                  </span>
+                </td>
+                <td class="mono">{{ invoice.totalAmount | currency:'INR':'symbol-narrow' }}</td>
+                <td class="row-actions">
+                  <button
+                    type="button"
+                    class="link-btn"
+                    (click)="markPaid(invoice)"
+                    [disabled]="invoice.status === 'PAID' || saving"
+                  >
+                    Mark paid
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </div>
+
+  @if (selectedOrder) {
+    <div class="panel summary">
+      <div>
+        <span class="muted">Selected order</span>
+        <strong>{{ selectedOrder.orderNumber }}</strong>
+      </div>
+      <div>
+        <span class="muted">Customer</span>
+        <strong>{{ selectedOrder.customerName || 'Walk-in' }}</strong>
+      </div>
+      <div>
+        <span class="muted">Total</span>
+        <strong>{{ selectedOrder.totalAmount | currency:'INR':'symbol-narrow' }}</strong>
+      </div>
+      <div>
+        <span class="muted">Items</span>
+        <strong>{{ selectedOrder.items.length }}</strong>
+      </div>
+    </div>
+  }
+</section>

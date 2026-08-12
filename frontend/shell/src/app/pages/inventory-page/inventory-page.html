@@ -1,0 +1,111 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h2>Inventory</h2>
+      <p>Manage menu items, availability, and cycle-based pricing.</p>
+    </div>
+    <button type="button" class="ghost-btn" (click)="load()" [disabled]="loading">Refresh</button>
+  </header>
+
+  @if (error) {
+    <div class="alert">{{ error }}</div>
+  }
+
+  <div class="grid">
+    <form class="panel form" (ngSubmit)="save()">
+      <h3>{{ form.id ? 'Edit item' : 'New item' }}</h3>
+
+      <label>
+        Item name
+        <input type="text" name="name" [(ngModel)]="form.name" required />
+      </label>
+
+      <label>
+        Category
+        <input type="text" name="category" [(ngModel)]="form.category" />
+      </label>
+
+      <label>
+        Description
+        <textarea name="description" [(ngModel)]="form.description" rows="4"></textarea>
+      </label>
+
+      <div class="switch-row">
+        <label class="switch">
+          <input type="checkbox" name="active" [(ngModel)]="form.active" />
+          <span>Available</span>
+        </label>
+      </div>
+
+      <div class="price-grid">
+        <label>
+          Daily
+          <input type="number" name="dailyPrice" [(ngModel)]="form.dailyPrice" min="0" step="0.01" />
+        </label>
+        <label>
+          Weekly
+          <input type="number" name="weeklyPrice" [(ngModel)]="form.weeklyPrice" min="0" step="0.01" />
+        </label>
+        <label>
+          Monthly
+          <input type="number" name="monthlyPrice" [(ngModel)]="form.monthlyPrice" min="0" step="0.01" />
+        </label>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="primary-btn" [disabled]="saving">
+          {{ saving ? 'Saving...' : form.id ? 'Update item' : 'Create item' }}
+        </button>
+        <button type="button" class="ghost-btn" (click)="reset()">Reset</button>
+      </div>
+    </form>
+
+    <div class="panel table-panel">
+      <div class="table-head">
+        <h3>Items</h3>
+        <span>{{ items.length }} records</span>
+      </div>
+
+      @if (loading) {
+        <p class="muted">Loading inventory...</p>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Category</th>
+              <th>Availability</th>
+              <th>Daily</th>
+              <th>Weekly</th>
+              <th>Monthly</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items; track item.id) {
+              <tr>
+                <td>
+                  <strong>{{ item.name }}</strong>
+                  <div class="muted">{{ item.description }}</div>
+                </td>
+                <td>{{ item.category || '-' }}</td>
+                <td>
+                  <span class="pill" [class.off]="!item.active">{{ item.active ? 'Available' : 'Hidden' }}</span>
+                </td>
+                <td class="mono">{{ formatPrice(item, 'DAILY') }}</td>
+                <td class="mono">{{ formatPrice(item, 'WEEKLY') }}</td>
+                <td class="mono">{{ formatPrice(item, 'MONTHLY') }}</td>
+                <td class="row-actions">
+                  <button type="button" class="link-btn" (click)="edit(item)">Edit</button>
+                  <button type="button" class="link-btn" (click)="setActive(item, !item.active)">
+                    {{ item.active ? 'Disable' : 'Enable' }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </div>
+</section>

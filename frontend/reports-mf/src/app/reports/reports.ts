@@ -1,10 +1,46 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 
-interface ReportRow {
+interface Summary {
+  totalRevenue: number;
+  todayRevenue: number;
+  totalOrders: number;
+  todayOrders: number;
+  activeItems: number;
+  activeCustomers: number;
+  pendingInvoices: number;
+}
+
+interface MonthlyRevenuePoint {
+  month: string;
+  revenue: number;
+}
+
+interface TopItemRow {
+  menuItemId: number;
   item: string;
-  category: string;
+  category: string | null;
   unitsSold: number;
-  revenue: string;
+  revenue: number;
+}
+
+const API_BASE = 'http://localhost:8081';
+const currency = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 2,
+});
+
+async function fetchJson<T>(path: string, token?: string | null): Promise<T> {
+  const headers: HeadersInit = {};
+  if (token) {
+    headers.Authorization = token;
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, { headers });
+  if (!response.ok) {
+    throw new Error(await response.text() || response.statusText);
+  }
+  return (await response.json()) as T;
 }
 
 @Component({
@@ -13,30 +49,46 @@ interface ReportRow {
   templateUrl: './reports.html',
   styleUrl: './reports.scss',
 })
-export class Reports {
+export class Reports implements OnInit {
   @Input() token: string | null = null;
-  @Input() user: { name: string; role: string } | null = null;
+  @Input() user: { username?: string; displayName?: string; role?: string } | null = null;
 
-  // TEMP mock data — swap for GET /api/reports/top-items,
-  // GET /api/reports/monthly-revenue once report-service is live.
-  monthlyRevenue = [
-    { month: 'Feb', value: 62 },
-    { month: 'Mar', value: 71 },
-    { month: 'Apr', value: 68 },
-    { month: 'May', value: 84 },
-    { month: 'Jun', value: 96 },
-    { month: 'Jul', value: 103 },
-  ];
+  loading = true;
+  error = '';
+  summary: Summary | null = null;
+  monthlyRevenue: MonthlyRevenuePoint[] = [];
+  topItems: TopItemRow[] = [];
 
-  topItems: ReportRow[] = [
-    { item: 'Paneer Butter Masala', category: 'Main', unitsSold: 342, revenue: '₹75,240' },
-    { item: 'Veg Biryani', category: 'Main', unitsSold: 298, revenue: '₹56,620' },
-    { item: 'Butter Naan', category: 'Bread', unitsSold: 610, revenue: '₹24,400' },
-    { item: 'Cold Coffee', category: 'Beverage', unitsSold: 275, revenue: '₹24,750' },
-    { item: 'Masala Dosa', category: 'South Indian', unitsSold: 190, revenue: '₹20,900' },
-  ];
+  async ngOnInit(): Promise<void> {
+    this.loading = true;
+    this.error = '';
+
+    try {
+      if (!this.token) {
+        throw new Error('Login through the shell to load live report data.');
+      }
+
+      const [summary, monthlyRevenue, topItems] = await Promise.all([
+        fetchJson<Summary>('/api/reports/summary', this.token),
+        fetchJson<MonthlyRevenuePoint[]>('/api/reports/monthly-revenue', this.token),
+        fetchJson<TopItemRow[]>('/api/reports/top-items', this.token),
+      ]);
+
+      this.summary = summary;
+      this.monthlyRevenue = monthlyRevenue;
+      this.topItems = topItems;
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : String(err);
+    } finally {
+      this.loading = false;
+    }
+  }
 
   get maxRevenue(): number {
-    return Math.max(...this.monthlyRevenue.map((m) => m.value));
+    return Math.max(1, ...this.monthlyRevenue.map((month) => month.revenue));
+  }
+
+  formatMoney(value: number): string {
+    return currency.format(value);
   }
 }

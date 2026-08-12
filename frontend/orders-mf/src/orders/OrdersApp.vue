@@ -1,21 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import NewOrder from './NewOrder.vue';
 import RunningOrders from './RunningOrders.vue';
 
-defineProps<{
+const props = defineProps<{
   token?: string | null;
-  user?: { name: string; role: string } | null;
+  user?: {
+    username?: string;
+    displayName?: string;
+    role?: string;
+  } | null;
 }>();
 
 const tab = ref<'new' | 'running'>('new');
+
+const displayName = computed(() => props.user?.displayName || props.user?.username || 'team');
 </script>
 
 <template>
   <div class="orders-app">
     <div class="page-head">
-      <h2>Orders</h2>
-      <p>Create new orders and track what's running on the floor.</p>
+      <div>
+        <h2>Orders</h2>
+        <p>Live order entry and queue tracking for {{ displayName }}.</p>
+      </div>
     </div>
 
     <div class="tabs">
@@ -27,8 +35,8 @@ const tab = ref<'new' | 'running'>('new');
       </button>
     </div>
 
-    <NewOrder v-if="tab === 'new'" />
-    <RunningOrders v-else />
+    <NewOrder v-if="tab === 'new'" :token="props.token" :user="props.user" />
+    <RunningOrders v-else :token="props.token" :user="props.user" />
   </div>
 </template>
 
@@ -43,6 +51,7 @@ const tab = ref<'new' | 'running'>('new');
 .page-head h2 {
   font-size: 24px;
 }
+
 .page-head p {
   margin: 4px 0 0;
   color: var(--ink-soft);

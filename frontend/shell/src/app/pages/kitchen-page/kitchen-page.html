@@ -1,0 +1,68 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h2>Kitchen</h2>
+      <p>View open orders and accept tickets as they arrive.</p>
+    </div>
+    <button type="button" class="ghost-btn" (click)="load()" [disabled]="loading">Refresh</button>
+  </header>
+
+  @if (error) {
+    <div class="alert">{{ error }}</div>
+  }
+
+  <div class="panel table-panel">
+    <div class="table-head">
+      <h3>Active orders</h3>
+      <span>{{ activeOrders.length }} records</span>
+    </div>
+
+    @if (loading) {
+      <p class="muted">Loading kitchen queue...</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Placed</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of activeOrders; track order.id) {
+            <tr>
+              <td>
+                <strong>{{ order.orderNumber }}</strong>
+                <div class="muted">{{ order.tableNumber || 'Walk-in' }}</div>
+              </td>
+              <td>
+                <strong>{{ order.customerName || 'Walk-in' }}</strong>
+                <div class="muted">{{ order.customerPhone || '-' }}</div>
+              </td>
+              <td class="items-cell">{{ itemSummary(order) }}</td>
+              <td class="mono">{{ order.createdAt | date: 'short' }}</td>
+              <td>
+                <span class="pill" [class.off]="order.status !== 'NEW'">
+                  {{ order.status }}
+                </span>
+              </td>
+              <td class="row-actions">
+                <button
+                  type="button"
+                  class="link-btn"
+                  (click)="accept(order)"
+                  [disabled]="order.status !== 'NEW' || savingId === order.id"
+                >
+                  Accept
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</section>

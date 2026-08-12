@@ -6,22 +6,11 @@
     </div>
 
     <nav>
-      @for (item of nav; track item.path) {
-        @if (item.disabled) {
-          <span class="nav-item disabled" [title]="item.label + ' — coming soon'">
-            <span class="nav-icon">{{ item.icon }}</span>
-            {{ item.label }}
-          </span>
-        } @else {
-          <a
-            class="nav-item"
-            [routerLink]="item.path"
-            routerLinkActive="active"
-          >
-            <span class="nav-icon">{{ item.icon }}</span>
-            {{ item.label }}
-          </a>
-        }
+      @for (item of visibleNav; track item.path) {
+        <a class="nav-item" [routerLink]="item.path" routerLinkActive="active">
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+        </a>
       }
     </nav>
   </aside>
@@ -29,19 +18,21 @@
   <div class="main">
     <header class="topbar">
       <div class="search">
-        <span class="search-icon">⌕</span>
-        <input type="text" placeholder="Search orders, items, customers…" />
+        <span class="search-icon">S</span>
+        <input type="text" placeholder="Search orders, items, customers" />
       </div>
 
       <div class="topbar-actions">
-        <button class="icon-btn" title="Notifications">🔔</button>
+        <button class="icon-btn" type="button" title="Notifications">N</button>
         <div class="profile">
-          <span class="avatar">{{ auth.currentUser()?.name?.charAt(0) || '?' }}</span>
+          <span class="avatar">{{ avatar }}</span>
           <div class="profile-info">
-            <span class="profile-name">{{ auth.currentUser()?.name || 'Guest' }}</span>
-            <span class="profile-role">{{ auth.currentUser()?.role || '' }}</span>
+            <span class="profile-name">{{ displayName }}</span>
+            <span class="profile-role">{{ profileRole }}</span>
           </div>
-          <button class="logout-btn" (click)="logout()" title="Log out">⏻</button>
+          <button class="logout-btn" type="button" (click)="logout()" title="Log out">
+            Logout
+          </button>
         </div>
       </div>
     </header>

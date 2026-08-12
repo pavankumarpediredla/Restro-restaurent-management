@@ -1,0 +1,30 @@
+@import '../inventory-page/inventory-page.scss';
+
+.summary {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summary > div {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.summary strong {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+@media (max-width: 1000px) {
+  .summary {
+    grid-template-columns: 1fr 1fr;
+  }
+}

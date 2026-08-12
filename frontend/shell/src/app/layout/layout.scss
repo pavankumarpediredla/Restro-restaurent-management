@@ -75,9 +75,12 @@ nav {
 }
 
 .nav-icon {
-  width: 18px;
+  width: 28px;
   text-align: center;
-  font-size: 14px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 /* ---------- main column ---------- */
@@ -186,9 +189,9 @@ nav {
 .logout-btn {
   background: none;
   border: none;
-  font-size: 15px;
+  font-size: 13px;
   color: var(--ink-soft);
-  padding: 6px;
+  padding: 6px 0 6px 8px;
 
   &:hover {
     color: var(--rust);

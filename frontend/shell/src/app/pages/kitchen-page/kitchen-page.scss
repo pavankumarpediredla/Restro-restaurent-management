@@ -1,0 +1,13 @@
+@import '../inventory-page/inventory-page.scss';
+
+.items-cell {
+  max-width: 320px;
+}
+
+.table-panel {
+  overflow: auto;
+}
+
+.row-actions {
+  white-space: nowrap;
+}

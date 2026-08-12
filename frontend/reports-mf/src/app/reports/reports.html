@@ -1,19 +1,56 @@
 <div class="reports">
   <div class="page-head">
     <h2>Reports</h2>
-    <p>Monthly revenue trend and best-selling items.</p>
+    <p>Live revenue and menu performance from the backend.</p>
   </div>
+
+  @if (loading) {
+    <div class="state">Loading live report data...</div>
+  }
+
+  @if (error) {
+    <div class="state state-error">{{ error }}</div>
+  }
+
+  @if (summary) {
+    <div class="summary-grid">
+      <div class="summary-card">
+        <span>Total revenue</span>
+        <strong>{{ formatMoney(summary.totalRevenue) }}</strong>
+      </div>
+      <div class="summary-card">
+        <span>Today revenue</span>
+        <strong>{{ formatMoney(summary.todayRevenue) }}</strong>
+      </div>
+      <div class="summary-card">
+        <span>Total orders</span>
+        <strong>{{ summary.totalOrders }}</strong>
+      </div>
+      <div class="summary-card">
+        <span>Today orders</span>
+        <strong>{{ summary.todayOrders }}</strong>
+      </div>
+      <div class="summary-card">
+        <span>Active items</span>
+        <strong>{{ summary.activeItems }}</strong>
+      </div>
+      <div class="summary-card">
+        <span>Pending invoices</span>
+        <strong>{{ summary.pendingInvoices }}</strong>
+      </div>
+    </div>
+  }
 
   <div class="panel">
     <div class="panel-head">
       <h3>Revenue trend</h3>
-      <span class="panel-sub">in ₹’000</span>
+      <span class="panel-sub">in INR</span>
     </div>
     <div class="bar-chart">
       @for (m of monthlyRevenue; track m.month) {
         <div class="bar-col">
-          <div class="bar" [style.height.%]="(m.value / maxRevenue) * 100">
-            <span class="bar-value">{{ m.value }}</span>
+          <div class="bar" [style.height.%]="(m.revenue / maxRevenue) * 100">
+            <span class="bar-value">{{ formatMoney(m.revenue) }}</span>
           </div>
           <span class="bar-label">{{ m.month }}</span>
         </div>
@@ -35,12 +72,12 @@
         </tr>
       </thead>
       <tbody>
-        @for (row of topItems; track row.item) {
+        @for (row of topItems; track row.menuItemId) {
           <tr>
             <td>{{ row.item }}</td>
-            <td class="muted">{{ row.category }}</td>
+            <td class="muted">{{ row.category || '-' }}</td>
             <td class="mono">{{ row.unitsSold }}</td>
-            <td class="mono">{{ row.revenue }}</td>
+            <td class="mono">{{ formatMoney(row.revenue) }}</td>
           </tr>
         }
       </tbody>

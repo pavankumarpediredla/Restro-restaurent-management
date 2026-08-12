@@ -5,13 +5,15 @@ const TOKEN_KEY = 'restro_token';
 const USER_KEY = 'restro_user';
 
 export interface AuthUser {
-  name: string;
-  role: 'ADMIN' | 'MANAGER' | 'STAFF';
+  id: number;
+  username: string;
+  displayName: string;
+  role: 'ADMIN' | 'MANAGER' | 'KITCHEN';
+  enabled: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  // signal so the header/sidebar can react to login state instantly
   readonly currentUser = signal<AuthUser | null>(this.readUser());
 
   constructor(private router: Router) {}
@@ -20,30 +22,27 @@ export class AuthService {
     return !!localStorage.getItem(TOKEN_KEY);
   }
 
-  /**
-   * TEMP: mock login so the UI can be built end-to-end without the backend running yet.
-   * Replace the body of this method with a real HTTP call once auth-service /
-   * the gateway is up:
-   *
-   *   return this.http.post<{ token: string; user: AuthUser }>(
-   *     '/api/auth/login', { email, password }
-   *   );
-   */
-  login(email: string, password: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (!email || !password) {
-          resolve(false);
-          return;
+  get token(): string | null {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  login(username: string, password: string): Promise<boolean> {
+    return fetch('http://localhost:8081/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return false;
         }
-        const fakeToken = 'mock-jwt-token';
-        const user: AuthUser = { name: email.split('@')[0], role: 'ADMIN' };
-        localStorage.setItem(TOKEN_KEY, fakeToken);
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
-        this.currentUser.set(user);
-        resolve(true);
-      }, 400); // simulate network latency
-    });
+        const payload = await response.json();
+        localStorage.setItem(TOKEN_KEY, payload.token);
+        localStorage.setItem(USER_KEY, JSON.stringify(payload.user));
+        this.currentUser.set(payload.user);
+        return true;
+      })
+      .catch(() => false);
   }
 
   logout(): void {

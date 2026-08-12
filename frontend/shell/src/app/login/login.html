@@ -4,15 +4,16 @@
       <span class="brand-mark">R</span>
       <h1>Restro POS</h1>
     </div>
-    <p class="subtitle">Sign in to manage your restaurant</p>
+    <p class="subtitle">Sign in with your backend account</p>
 
     <label>
-      Email
+      Username
       <input
-        type="email"
-        name="email"
-        [(ngModel)]="email"
-        placeholder="you@restro.com"
+        type="text"
+        name="username"
+        [(ngModel)]="username"
+        placeholder="admin"
+        autocomplete="username"
         required
       />
     </label>
@@ -23,7 +24,8 @@
         type="password"
         name="password"
         [(ngModel)]="password"
-        placeholder="••••••••"
+        placeholder="********"
+        autocomplete="current-password"
         required
       />
     </label>
@@ -33,9 +35,7 @@
     }
 
     <button type="submit" [disabled]="loading() || loginForm.invalid">
-      {{ loading() ? 'Signing in…' : 'Sign in' }}
+      {{ loading() ? 'Signing in...' : 'Sign in' }}
     </button>
-
-    <p class="hint">Any email + password works for now — this is a mock login.</p>
   </form>
 </div>

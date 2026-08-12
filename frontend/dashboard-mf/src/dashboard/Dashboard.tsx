@@ -1,158 +1,216 @@
+import { useEffect, useMemo, useState } from 'react';
 import './dashboard.css';
-
-interface StatCard {
-  label: string;
-  value: string;
-  delta: string;
-  positive: boolean;
-}
-
-interface RecentOrder {
-  id: string;
-  table: string;
-  items: number;
-  total: string;
-  status: 'New' | 'In Kitchen' | 'Ready' | 'Billed';
-}
-
-interface NotificationItem {
-  message: string;
-  time: string;
-}
-
-// TEMP mock data — swap for report-service / order-service calls
-// (GET /api/reports/summary, GET /api/orders?limit=5) once the gateway is live.
-const stats: StatCard[] = [
-  { label: "Today's Sales", value: '₹48,260', delta: '+12.4%', positive: true },
-  { label: 'Orders Today', value: '186', delta: '+6.1%', positive: true },
-  { label: 'Avg. Ticket', value: '₹259', delta: '-2.3%', positive: false },
-  { label: 'Tables Occupied', value: '14 / 22', delta: '64%', positive: true },
-];
-
-const salesByDay = [
-  { day: 'Mon', value: 32 },
-  { day: 'Tue', value: 41 },
-  { day: 'Wed', value: 38 },
-  { day: 'Thu', value: 52 },
-  { day: 'Fri', value: 68 },
-  { day: 'Sat', value: 91 },
-  { day: 'Sun', value: 74 },
-];
-
-const revenueSplit = [
-  { label: 'Dine-in', value: 58, color: 'var(--ember)' },
-  { label: 'Takeaway', value: 27, color: 'var(--sage)' },
-  { label: 'Delivery', value: 15, color: 'var(--amber)' },
-];
-
-const recentOrders: RecentOrder[] = [
-  { id: '#1042', table: 'T5', items: 4, total: '₹860', status: 'In Kitchen' },
-  { id: '#1041', table: 'T2', items: 2, total: '₹410', status: 'Ready' },
-  { id: '#1040', table: 'Takeaway', items: 1, total: '₹190', status: 'New' },
-  { id: '#1039', table: 'T8', items: 6, total: '₹1,320', status: 'Billed' },
-  { id: '#1038', table: 'T3', items: 3, total: '₹540', status: 'Billed' },
-];
-
-const notifications: NotificationItem[] = [
-  { message: 'Order #1042 sent to kitchen', time: '2 min ago' },
-  { message: 'Stock low: Paneer (2kg left)', time: '18 min ago' },
-  { message: 'Invoice #889 generated for T3', time: '26 min ago' },
-];
-
-function statusClass(status: RecentOrder['status']): string {
-  return status.toLowerCase().replace(' ', '-');
-}
 
 interface DashboardProps {
   token?: string | null;
-  user?: { name: string; role: string } | null;
+  user?: {
+    username?: string;
+    displayName?: string;
+    role?: string;
+  } | null;
 }
 
-export function Dashboard(_props: DashboardProps = {}) {
-  const maxSales = Math.max(...salesByDay.map((d) => d.value));
-  const offset1 = revenueSplit[0].value;
-  const offset2 = revenueSplit[0].value + revenueSplit[1].value;
+interface Summary {
+  totalRevenue: number;
+  todayRevenue: number;
+  totalOrders: number;
+  todayOrders: number;
+  activeItems: number;
+  activeCustomers: number;
+  pendingInvoices: number;
+}
+
+interface MonthlyRevenuePoint {
+  month: string;
+  revenue: number;
+}
+
+interface TopItem {
+  menuItemId: number;
+  item: string;
+  category?: string | null;
+  unitsSold: number;
+  revenue: number;
+}
+
+interface RecentOrder {
+  id: number;
+  orderNumber: string;
+  tableNumber?: string | null;
+  customerName?: string | null;
+  items: number;
+  totalAmount: number;
+  status: 'NEW' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED';
+  createdAt: string;
+}
+
+const API_BASE = 'http://localhost:8081';
+const currency = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 2,
+});
+
+async function fetchJson<T>(path: string, token?: string | null): Promise<T> {
+  const headers: HeadersInit = {};
+  if (token) {
+    headers.Authorization = token;
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, { headers });
+  if (!response.ok) {
+    throw new Error(await response.text() || response.statusText);
+  }
+  return (await response.json()) as T;
+}
+
+function statusClass(status: RecentOrder['status']): string {
+  return status.toLowerCase().replace('_', '-');
+}
+
+export function Dashboard(props: DashboardProps = {}) {
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenuePoint[]>([]);
+  const [topItems, setTopItems] = useState<TopItem[]>([]);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        if (!props.token) {
+          throw new Error('Login through the shell to load live dashboard data.');
+        }
+
+        const [summaryResponse, monthlyResponse, topResponse, recentResponse] = await Promise.all([
+          fetchJson<Summary>('/api/reports/summary', props.token),
+          fetchJson<MonthlyRevenuePoint[]>('/api/reports/monthly-revenue', props.token),
+          fetchJson<TopItem[]>('/api/reports/top-items', props.token),
+          fetchJson<RecentOrder[]>('/api/reports/recent-orders', props.token),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setSummary(summaryResponse);
+        setMonthlyRevenue(monthlyResponse);
+        setTopItems(topResponse);
+        setRecentOrders(recentResponse);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [props.token]);
+
+  const stats = useMemo(() => {
+    if (!summary) {
+      return [];
+    }
+
+    return [
+      { label: 'Total revenue', value: currency.format(summary.totalRevenue), hint: 'All paid invoices' },
+      { label: 'Today revenue', value: currency.format(summary.todayRevenue), hint: 'Paid today' },
+      { label: 'Total orders', value: String(summary.totalOrders), hint: 'All orders saved' },
+      { label: 'Today orders', value: String(summary.todayOrders), hint: 'Placed today' },
+      { label: 'Active items', value: String(summary.activeItems), hint: 'Menu inventory' },
+      { label: 'Pending invoices', value: String(summary.pendingInvoices), hint: 'Awaiting payment' },
+    ];
+  }, [summary]);
+
+  const maxRevenue = Math.max(
+    1,
+    ...monthlyRevenue.map((entry) => Number.isFinite(entry.revenue) ? entry.revenue : 0),
+  );
+  const displayName = props.user?.displayName || props.user?.username || 'team';
 
   return (
     <div className="dashboard">
       <div className="page-head">
         <h2>Dashboard</h2>
-        <p>Here's how the floor is doing today.</p>
+        <p>Live summary for {displayName}.</p>
       </div>
 
-      {/* quick access stat cards */}
-      <div className="stats-row">
-        {stats.map((stat) => (
-          <div className="stat-card ticket-edge" key={stat.label}>
-            <span className="stat-label">{stat.label}</span>
-            <span className="stat-value">{stat.value}</span>
-            <span className={'stat-delta ' + (stat.positive ? 'positive' : 'negative')}>
-              {stat.delta}
-            </span>
-          </div>
-        ))}
-      </div>
+      {loading && <div className="state state-loading">Loading live data...</div>}
+      {error && <div className="state state-error">{error}</div>}
+
+      {summary && (
+        <div className="stats-row">
+          {stats.map((stat) => (
+            <div className="stat-card ticket-edge" key={stat.label}>
+              <span className="stat-label">{stat.label}</span>
+              <span className="stat-value">{stat.value}</span>
+              <span className="stat-hint">{stat.hint}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="charts-row">
-        {/* sales bar chart */}
         <div className="panel">
           <div className="panel-head">
-            <h3>Sales this week</h3>
-            <span className="panel-sub">in ₹’000</span>
+            <h3>Revenue by month</h3>
+            <span className="panel-sub">in INR</span>
           </div>
           <div className="bar-chart">
-            {salesByDay.map((d) => (
-              <div className="bar-col" key={d.day}>
-                <div className="bar" style={{ height: `${(d.value / maxSales) * 100}%` }}>
-                  <span className="bar-value">{d.value}</span>
+            {monthlyRevenue.map((point) => (
+              <div className="bar-col" key={point.month}>
+                <div className="bar" style={{ height: `${(point.revenue / maxRevenue) * 100}%` }}>
+                  <span className="bar-value">{currency.format(point.revenue)}</span>
                 </div>
-                <span className="bar-label">{d.day}</span>
+                <span className="bar-label">{point.month}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* revenue split donut */}
         <div className="panel">
           <div className="panel-head">
-            <h3>Revenue by channel</h3>
+            <h3>Top items</h3>
           </div>
-          <div className="donut-wrap">
-            <svg viewBox="0 0 42 42" className="donut">
-              <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--paper-dim)" strokeWidth="6" />
-              <circle
-                cx="21" cy="21" r="15.9" fill="transparent"
-                stroke={revenueSplit[0].color} strokeWidth="6"
-                strokeDasharray={`${revenueSplit[0].value} ${100 - revenueSplit[0].value}`}
-                strokeDashoffset={25}
-              />
-              <circle
-                cx="21" cy="21" r="15.9" fill="transparent"
-                stroke={revenueSplit[1].color} strokeWidth="6"
-                strokeDasharray={`${revenueSplit[1].value} ${100 - revenueSplit[1].value}`}
-                strokeDashoffset={25 - offset1}
-              />
-              <circle
-                cx="21" cy="21" r="15.9" fill="transparent"
-                stroke={revenueSplit[2].color} strokeWidth="6"
-                strokeDasharray={`${revenueSplit[2].value} ${100 - revenueSplit[2].value}`}
-                strokeDashoffset={25 - offset2}
-              />
-            </svg>
-            <div className="donut-legend">
-              {revenueSplit.map((r) => (
-                <div className="legend-item" key={r.label}>
-                  <span className="dot" style={{ background: r.color }}></span>
-                  {r.label} <strong>{r.value}%</strong>
-                </div>
+          <table className="top-items-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Units</th>
+                <th>Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topItems.map((item) => (
+                <tr key={item.menuItemId}>
+                  <td>
+                    <strong>{item.item}</strong>
+                    <div className="table-muted">{item.category || '-'}</div>
+                  </td>
+                  <td>{item.unitsSold}</td>
+                  <td className="mono">{currency.format(item.revenue)}</td>
+                </tr>
               ))}
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
 
       <div className="bottom-row">
-        {/* recent orders */}
         <div className="panel">
           <div className="panel-head">
             <h3>Recent orders</h3>
@@ -161,21 +219,24 @@ export function Dashboard(_props: DashboardProps = {}) {
             <thead>
               <tr>
                 <th>Order</th>
+                <th>Customer</th>
                 <th>Table</th>
-                <th>Items</th>
                 <th>Total</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {recentOrders.map((o) => (
-                <tr key={o.id}>
-                  <td className="mono">{o.id}</td>
-                  <td>{o.table}</td>
-                  <td>{o.items}</td>
-                  <td className="mono">{o.total}</td>
+              {recentOrders.map((order) => (
+                <tr key={order.id}>
+                  <td className="mono">{order.orderNumber}</td>
                   <td>
-                    <span className={'status-pill ' + statusClass(o.status)}>{o.status}</span>
+                    <strong>{order.customerName || 'Walk-in'}</strong>
+                    <div className="table-muted">{order.items} item(s)</div>
+                  </td>
+                  <td>{order.tableNumber || '-'}</td>
+                  <td className="mono">{currency.format(order.totalAmount)}</td>
+                  <td>
+                    <span className={`status-pill ${statusClass(order.status)}`}>{order.status}</span>
                   </td>
                 </tr>
               ))}
@@ -183,21 +244,32 @@ export function Dashboard(_props: DashboardProps = {}) {
           </table>
         </div>
 
-        {/* notifications */}
         <div className="panel notifications-panel">
           <div className="panel-head">
-            <h3>Notifications</h3>
+            <h3>Summary</h3>
           </div>
           <ul className="notif-list">
-            {notifications.map((n) => (
-              <li key={n.message}>
-                <span className="notif-dot"></span>
-                <div>
-                  <p className="notif-message">{n.message}</p>
-                  <span className="notif-time">{n.time}</span>
-                </div>
-              </li>
-            ))}
+            <li>
+              <span className="notif-dot"></span>
+              <div>
+                <p className="notif-message">{summary ? summary.activeCustomers : 0} customers in the database</p>
+                <span className="notif-time">Source: report-service</span>
+              </div>
+            </li>
+            <li>
+              <span className="notif-dot"></span>
+              <div>
+                <p className="notif-message">{summary ? summary.activeItems : 0} items currently active</p>
+                <span className="notif-time">Source: inventory</span>
+              </div>
+            </li>
+            <li>
+              <span className="notif-dot"></span>
+              <div>
+                <p className="notif-message">{summary ? summary.pendingInvoices : 0} invoices pending</p>
+                <span className="notif-time">Source: billing</span>
+              </div>
+            </li>
           </ul>
         </div>
       </div>

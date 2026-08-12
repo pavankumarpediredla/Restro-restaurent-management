@@ -1,0 +1,88 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h2>Customers</h2>
+      <p>Keep customer records in sync with orders and billing.</p>
+    </div>
+    <button type="button" class="ghost-btn" (click)="load()" [disabled]="loading">Refresh</button>
+  </header>
+
+  @if (error) {
+    <div class="alert">{{ error }}</div>
+  }
+
+  <div class="grid">
+    <form class="panel form" (ngSubmit)="save()">
+      <h3>{{ form.id ? 'Edit customer' : 'New customer' }}</h3>
+
+      <label>
+        Full name
+        <input type="text" name="fullName" [(ngModel)]="form.fullName" required />
+      </label>
+
+      <label>
+        Phone
+        <input type="text" name="phone" [(ngModel)]="form.phone" />
+      </label>
+
+      <label>
+        Email
+        <input type="email" name="email" [(ngModel)]="form.email" />
+      </label>
+
+      <label>
+        Address
+        <textarea name="address" [(ngModel)]="form.address" rows="4"></textarea>
+      </label>
+
+      <label class="switch">
+        <input type="checkbox" name="active" [(ngModel)]="form.active" />
+        <span>Active</span>
+      </label>
+
+      <div class="actions">
+        <button type="submit" class="primary-btn" [disabled]="saving">
+          {{ saving ? 'Saving...' : form.id ? 'Update customer' : 'Create customer' }}
+        </button>
+        <button type="button" class="ghost-btn" (click)="reset()">Reset</button>
+      </div>
+    </form>
+
+    <div class="panel table-panel">
+      <h3>Customer records</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (customer of customers; track customer.id) {
+            <tr>
+              <td>
+                <strong>{{ customer.fullName }}</strong>
+                <div class="muted">{{ customer.address || '-' }}</div>
+              </td>
+              <td>
+                <div class="mono">{{ customer.phone || '-' }}</div>
+                <div class="muted">{{ customer.email || '-' }}</div>
+              </td>
+              <td>
+                <span class="pill" [class.off]="!customer.active">{{ customer.active ? 'Active' : 'Inactive' }}</span>
+              </td>
+              <td class="row-actions">
+                <button type="button" class="link-btn" (click)="edit(customer)">Edit</button>
+                <button type="button" class="link-btn" (click)="setActive(customer, !customer.active)">
+                  {{ customer.active ? 'Disable' : 'Enable' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

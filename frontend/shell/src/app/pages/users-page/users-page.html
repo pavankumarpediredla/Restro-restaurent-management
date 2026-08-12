@@ -1,0 +1,87 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h2>Users</h2>
+      <p>Admin-only user provisioning backed by the database.</p>
+    </div>
+    <button type="button" class="ghost-btn" (click)="load()" [disabled]="loading">Refresh</button>
+  </header>
+
+  @if (error) {
+    <div class="alert">{{ error }}</div>
+  }
+
+  <div class="grid">
+    <form class="panel form" (ngSubmit)="save()">
+      <h3>Create user</h3>
+
+      <label>
+        Username
+        <input type="text" name="username" [(ngModel)]="form.username" required />
+      </label>
+
+      <label>
+        Display name
+        <input type="text" name="displayName" [(ngModel)]="form.displayName" />
+      </label>
+
+      <label>
+        Password
+        <input type="password" name="password" [(ngModel)]="form.password" required />
+      </label>
+
+      <label>
+        Role
+        <select name="role" [(ngModel)]="form.role">
+          <option value="ADMIN">ADMIN</option>
+          <option value="MANAGER">MANAGER</option>
+          <option value="KITCHEN">KITCHEN</option>
+        </select>
+      </label>
+
+      <label class="switch">
+        <input type="checkbox" name="enabled" [(ngModel)]="form.enabled" />
+        <span>Enabled</span>
+      </label>
+
+      <button type="submit" class="primary-btn" [disabled]="saving">
+        {{ saving ? 'Saving...' : 'Create user' }}
+      </button>
+    </form>
+
+    <div class="panel table-panel">
+      <h3>Accounts</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users; track user.id) {
+            <tr>
+              <td>
+                <strong>{{ user.displayName || user.username }}</strong>
+                <div class="muted">{{ user.username }}</div>
+              </td>
+              <td>{{ user.role }}</td>
+              <td>
+                <span class="pill" [class.off]="!user.enabled">{{ user.enabled ? 'Enabled' : 'Disabled' }}</span>
+              </td>
+              <td class="mono">{{ user.createdAt | date: 'mediumDate' }}</td>
+              <td>
+                <button type="button" class="link-btn" (click)="setEnabled(user, !user.enabled)">
+                  {{ user.enabled ? 'Disable' : 'Enable' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

@@ -1,74 +1,221 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
+
+interface Props {
+  token?: string | null;
+  user?: {
+    username?: string;
+    displayName?: string;
+    role?: string;
+  } | null;
+}
+
+interface MenuPrice {
+  cycle: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  amount: number;
+}
 
 interface MenuItem {
-  id: string;
+  id: number;
   name: string;
-  price: number;
-  category: string;
+  description?: string | null;
+  category?: string | null;
+  active: boolean;
+  prices: MenuPrice[];
+}
+
+interface Customer {
+  id: number;
+  fullName: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  active: boolean;
 }
 
 interface CartLine {
   item: MenuItem;
   qty: number;
+  cycle: MenuPrice['cycle'];
 }
 
-// TEMP mock menu — swap for GET /api/inventory/menu-items once inventory-service is live
-const menu: MenuItem[] = [
-  { id: 'm1', name: 'Paneer Butter Masala', price: 220, category: 'Main' },
-  { id: 'm2', name: 'Butter Naan', price: 40, category: 'Bread' },
-  { id: 'm3', name: 'Veg Biryani', price: 190, category: 'Main' },
-  { id: 'm4', name: 'Masala Dosa', price: 110, category: 'South Indian' },
-  { id: 'm5', name: 'Cold Coffee', price: 90, category: 'Beverage' },
-  { id: 'm6', name: 'Gulab Jamun (2 pc)', price: 60, category: 'Dessert' },
-];
+const API_BASE = 'http://localhost:8081';
+const currency = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 2,
+});
 
-const tables = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'Takeaway'];
+const props = defineProps<Props>();
 
-const selectedTable = ref(tables[0]);
+const menu = ref<MenuItem[]>([]);
+const customers = ref<Customer[]>([]);
 const cart = ref<CartLine[]>([]);
+const loading = ref(true);
+const saving = ref(false);
+const error = ref('');
 const submitted = ref(false);
 
-const total = computed(() =>
-  cart.value.reduce((sum, line) => sum + line.item.price * line.qty, 0)
+const form = reactive({
+  tableNumber: '',
+  notes: '',
+  customerId: '' as number | '',
+  customerName: '',
+  customerPhone: '',
+  customerEmail: '',
+  customerAddress: '',
+});
+
+const activeCustomers = computed(() => customers.value.filter((customer) => customer.active));
+const selectedCustomer = computed(() =>
+  customers.value.find((customer) => String(customer.id) === String(form.customerId)),
 );
+const total = computed(() =>
+  cart.value.reduce((sum, line) => sum + priceFor(line.item, line.cycle) * line.qty, 0),
+);
+const displayName = computed(() => props.user?.displayName || props.user?.username || 'team');
 
-function addItem(item: MenuItem) {
-  const existing = cart.value.find((l) => l.item.id === item.id);
+function headers(): HeadersInit {
+  const value: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (props.token) {
+    value.Authorization = props.token;
+  }
+  return value;
+}
+
+async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, options);
+  if (!response.ok) {
+    throw new Error(await response.text() || response.statusText);
+  }
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  return (await response.json()) as T;
+}
+
+function priceFor(item: MenuItem, cycle: MenuPrice['cycle']): number {
+  return item.prices.find((price) => price.cycle === cycle)?.amount ?? item.prices[0]?.amount ?? 0;
+}
+
+function cycleOptions(item: MenuItem): MenuPrice[] {
+  return item.prices;
+}
+
+function trimOrNull(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
+}
+
+function addItem(item: MenuItem): void {
+  const existing = cart.value.find((line) => line.item.id === item.id);
   if (existing) {
-    existing.qty++;
-  } else {
-    cart.value.push({ item, qty: 1 });
+    existing.qty += 1;
+    return;
+  }
+  cart.value.push({
+    item,
+    qty: 1,
+    cycle: item.prices[0]?.cycle ?? 'DAILY',
+  });
+}
+
+function incrementLine(index: number): void {
+  cart.value[index].qty += 1;
+}
+
+function decrementLine(index: number): void {
+  cart.value[index].qty -= 1;
+  if (cart.value[index].qty <= 0) {
+    cart.value.splice(index, 1);
   }
 }
 
-function decrementItem(item: MenuItem) {
-  const existing = cart.value.find((l) => l.item.id === item.id);
-  if (!existing) return;
-  existing.qty--;
-  if (existing.qty <= 0) {
-    cart.value = cart.value.filter((l) => l.item.id !== item.id);
+function removeLine(index: number): void {
+  cart.value.splice(index, 1);
+}
+
+async function load(): Promise<void> {
+  loading.value = true;
+  error.value = '';
+
+  try {
+    if (!props.token) {
+      throw new Error('Login through the shell to load live order data.');
+    }
+
+    const [items, customerList] = await Promise.all([
+      fetchJson<MenuItem[]>('/api/v1/items', { headers: headers() }),
+      fetchJson<Customer[]>('/api/customers', { headers: headers() }),
+    ]);
+
+    menu.value = items.filter((item) => item.active);
+    customers.value = customerList;
+
+    if (!form.customerId && activeCustomers.value.length > 0) {
+      form.customerId = activeCustomers.value[0].id;
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    loading.value = false;
   }
 }
 
-/**
- * TEMP: mock submit. Replace with a real call once order-service /
- * the gateway is up:
- *
- *   await fetch('/api/orders', {
- *     method: 'POST',
- *     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
- *     body: JSON.stringify({ tableNumber: selectedTable.value, items: cart.value }),
- *   });
- */
-function submitOrder() {
-  if (cart.value.length === 0) return;
-  submitted.value = true;
-  setTimeout(() => {
-    submitted.value = false;
+async function submitOrder(): Promise<void> {
+  if (cart.value.length === 0) {
+    return;
+  }
+
+  saving.value = true;
+  error.value = '';
+
+  try {
+    const useExistingCustomer = form.customerId !== '';
+    await fetchJson('/api/v1/orders', {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({
+        customerId: useExistingCustomer ? Number(form.customerId) : null,
+        customerName: useExistingCustomer ? null : trimOrNull(form.customerName),
+        customerPhone: useExistingCustomer ? null : trimOrNull(form.customerPhone),
+        customerEmail: useExistingCustomer ? null : trimOrNull(form.customerEmail),
+        customerAddress: useExistingCustomer ? null : trimOrNull(form.customerAddress),
+        tableNumber: trimOrNull(form.tableNumber),
+        notes: trimOrNull(form.notes),
+        items: cart.value.map((line) => ({
+          menuItemId: line.item.id,
+          quantity: line.qty,
+          priceCycle: line.cycle,
+        })),
+      }),
+    });
+
+    submitted.value = true;
     cart.value = [];
-  }, 1800);
+    form.tableNumber = '';
+    form.notes = '';
+    form.customerName = '';
+    form.customerPhone = '';
+    form.customerEmail = '';
+    form.customerAddress = '';
+    form.customerId = activeCustomers.value[0]?.id ?? '';
+    await load();
+    window.setTimeout(() => {
+      submitted.value = false;
+    }, 1800);
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    saving.value = false;
+  }
 }
+
+onMounted(() => {
+  void load();
+});
 </script>
 
 <template>
@@ -76,54 +223,119 @@ function submitOrder() {
     <div class="menu-panel">
       <div class="panel-head">
         <h3>Menu</h3>
-        <label class="table-select">
-          Table
-          <select v-model="selectedTable">
-            <option v-for="t in tables" :key="t" :value="t">{{ t }}</option>
-          </select>
-        </label>
+        <button class="ghost-btn" type="button" @click="load" :disabled="loading">Refresh</button>
       </div>
 
-      <div class="menu-grid">
-        <button class="menu-item" v-for="item in menu" :key="item.id" @click="addItem(item)">
-          <span class="menu-item-cat">{{ item.category }}</span>
+      <div v-if="loading" class="empty-state">Loading live menu...</div>
+      <div v-else class="menu-grid">
+        <button
+          class="menu-item"
+          v-for="item in menu"
+          :key="item.id"
+          type="button"
+          @click="addItem(item)"
+        >
+          <span class="menu-item-cat">{{ item.category || 'Menu item' }}</span>
           <span class="menu-item-name">{{ item.name }}</span>
-          <span class="menu-item-price mono">₹{{ item.price }}</span>
+          <span class="menu-item-desc">{{ item.description || 'No description' }}</span>
+          <div class="price-row">
+            <span class="price-chip" v-for="price in item.prices" :key="price.cycle">
+              {{ price.cycle }} {{ currency.format(price.amount) }}
+            </span>
+          </div>
+          <span class="menu-item-action">Add to order</span>
         </button>
       </div>
     </div>
 
     <div class="cart-panel">
       <div class="panel-head">
-        <h3>Order Summary</h3>
+        <h3>Order summary</h3>
+        <span class="mono">{{ cart.length }} lines</span>
       </div>
 
+      <div class="meta-grid">
+        <label>
+          Table number
+          <input type="text" v-model="form.tableNumber" placeholder="T12 or Takeaway" />
+        </label>
+
+        <label>
+          Existing customer
+          <select v-model="form.customerId">
+            <option :value="''">Walk-in / new customer</option>
+            <option v-for="customer in activeCustomers" :key="customer.id" :value="customer.id">
+              {{ customer.fullName }}{{ customer.phone ? ` - ${customer.phone}` : '' }}
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <div v-if="selectedCustomer" class="selected-customer">
+        Using saved customer: <strong>{{ selectedCustomer.fullName }}</strong>
+      </div>
+
+      <div v-else class="customer-grid">
+        <label>
+          Customer name
+          <input type="text" v-model="form.customerName" placeholder="Guest name" />
+        </label>
+        <label>
+          Phone
+          <input type="text" v-model="form.customerPhone" placeholder="Phone number" />
+        </label>
+        <label>
+          Email
+          <input type="email" v-model="form.customerEmail" placeholder="customer@example.com" />
+        </label>
+        <label>
+          Address
+          <input type="text" v-model="form.customerAddress" placeholder="Delivery address" />
+        </label>
+      </div>
+
+      <label class="notes">
+        Notes
+        <textarea v-model="form.notes" rows="3" placeholder="Special instructions"></textarea>
+      </label>
+
       <div v-if="cart.length === 0" class="cart-empty">
-        Tap a menu item to add it to the order.
+        Add menu items to start an order.
       </div>
 
       <ul v-else class="cart-list">
-        <li v-for="line in cart" :key="line.item.id">
+        <li v-for="(line, index) in cart" :key="line.item.id">
           <div class="cart-line-info">
-            <span class="cart-line-name">{{ line.item.name }}</span>
-            <span class="cart-line-price mono">₹{{ line.item.price * line.qty }}</span>
+            <strong>{{ line.item.name }}</strong>
+            <span class="cart-line-meta">{{ currency.format(priceFor(line.item, line.cycle)) }} each</span>
           </div>
-          <div class="qty-stepper">
-            <button @click="decrementItem(line.item)">−</button>
-            <span class="mono">{{ line.qty }}</span>
-            <button @click="addItem(line.item)">+</button>
+          <div class="cart-controls">
+            <select v-model="line.cycle">
+              <option v-for="price in cycleOptions(line.item)" :key="price.cycle" :value="price.cycle">
+                {{ price.cycle }}
+              </option>
+            </select>
+            <div class="qty-stepper">
+              <button type="button" @click="decrementLine(index)">-</button>
+              <span>{{ line.qty }}</span>
+              <button type="button" @click="incrementLine(index)">+</button>
+            </div>
+            <span class="mono">{{ currency.format(priceFor(line.item, line.cycle) * line.qty) }}</span>
+            <button type="button" class="link-btn" @click="removeLine(index)">Remove</button>
           </div>
         </li>
       </ul>
 
       <div class="cart-total">
         <span>Total</span>
-        <span class="mono">₹{{ total }}</span>
+        <span class="mono">{{ currency.format(total) }}</span>
       </div>
 
-      <button class="submit-btn" :disabled="cart.length === 0" @click="submitOrder">
-        {{ submitted ? 'Order sent to kitchen ✓' : `Send order for ${selectedTable}` }}
+      <button class="submit-btn" type="button" :disabled="saving || cart.length === 0" @click="submitOrder">
+        {{ saving ? 'Saving order...' : 'Create order' }}
       </button>
+
+      <p v-if="submitted" class="success">Order saved to the backend.</p>
     </div>
   </div>
 </template>
@@ -136,7 +348,8 @@ function submitOrder() {
   align-items: start;
 }
 
-.menu-panel, .cart-panel {
+.menu-panel,
+.cart-panel {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -149,29 +362,47 @@ function submitOrder() {
   justify-content: space-between;
   margin-bottom: 16px;
 }
+
 .panel-head h3 {
   font-size: 15px;
 }
 
-.table-select {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.ghost-btn,
+.link-btn {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ghost-btn {
+  padding: 8px 12px;
+}
+
+.link-btn {
+  padding: 6px 10px;
   font-size: 12px;
+}
+
+.empty-state,
+.cart-empty,
+.success,
+.selected-customer {
+  font-size: 13px;
   color: var(--ink-soft);
 }
-.table-select select {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  padding: 5px 8px;
+
+.selected-customer {
+  padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #fff;
+  border-radius: 6px;
+  background: rgba(95, 122, 90, 0.08);
 }
 
 .menu-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -186,6 +417,7 @@ function submitOrder() {
   gap: 4px;
   transition: border-color 0.12s ease, background 0.12s ease;
 }
+
 .menu-item:hover {
   border-color: var(--ember);
   background: #fff;
@@ -197,49 +429,113 @@ function submitOrder() {
   letter-spacing: 0.04em;
   color: var(--ink-soft);
 }
+
 .menu-item-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
 }
-.menu-item-price {
+
+.menu-item-desc {
   font-size: 12px;
-  color: var(--amber);
+  color: var(--ink-soft);
+  min-height: 32px;
 }
 
-.cart-empty {
-  font-size: 13px;
+.price-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.price-chip {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(91, 86, 74, 0.08);
+  color: var(--ink);
+}
+
+.menu-item-action {
+  font-size: 12px;
+  color: var(--ember);
+  font-weight: 600;
+}
+
+.meta-grid,
+.customer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.meta-grid label,
+.customer-grid label,
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
   color: var(--ink-soft);
-  padding: 20px 0;
-  text-align: center;
+}
+
+.meta-grid input,
+.meta-grid select,
+.customer-grid input,
+.notes textarea,
+.cart-controls select {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+}
+
+.notes {
+  margin-top: 10px;
+}
+
+.notes textarea {
+  resize: vertical;
 }
 
 .cart-list {
   list-style: none;
-  margin: 0 0 14px;
+  margin: 16px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
+
 .cart-list li {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
 }
 
 .cart-line-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
-.cart-line-name {
-  font-size: 13px;
-}
-.cart-line-price {
+
+.cart-line-meta {
   font-size: 11px;
   color: var(--ink-soft);
+}
+
+.cart-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .qty-stepper {
@@ -247,6 +543,7 @@ function submitOrder() {
   align-items: center;
   gap: 8px;
 }
+
 .qty-stepper button {
   width: 22px;
   height: 22px;
@@ -264,6 +561,7 @@ function submitOrder() {
   font-weight: 600;
   padding-top: 12px;
   border-top: 1px solid var(--line);
+  margin-top: 14px;
   margin-bottom: 14px;
 }
 
@@ -277,14 +575,34 @@ function submitOrder() {
   font-size: 14px;
   font-weight: 600;
 }
+
 .submit-btn:hover:not(:disabled) {
   background: var(--ember);
 }
+
 .submit-btn:disabled {
   opacity: 0.5;
 }
 
 .mono {
   font-family: var(--font-mono);
+}
+
+@media (max-width: 1000px) {
+  .new-order,
+  .menu-grid,
+  .meta-grid,
+  .customer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cart-list li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cart-controls {
+    justify-content: flex-start;
+  }
 }
 </style>
