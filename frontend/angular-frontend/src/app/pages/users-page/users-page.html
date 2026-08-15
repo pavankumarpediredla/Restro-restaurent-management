@@ -1,0 +1,99 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h2>Staff Management</h2>
+      <p>Manage restaurant staff access. Only the owner/admin can add new staff.</p>
+    </div>
+    <button type="button" class="ghost-btn" (click)="load()" [disabled]="loading">Refresh</button>
+  </header>
+
+  @if (error) {
+    <div class="alert">{{ error }}</div>
+  }
+
+  <div class="grid">
+    @if (canCreateStaff) {
+    <form class="panel form" (ngSubmit)="save()">
+      <h3>Add staff member</h3>
+
+      <label>
+        Username
+        <input type="text" name="username" [(ngModel)]="form.username" required />
+      </label>
+
+      <label>
+        Display name
+        <input type="text" name="displayName" [(ngModel)]="form.displayName" />
+      </label>
+
+      <label>
+        Password
+        <input type="password" name="password" [(ngModel)]="form.password" required />
+      </label>
+
+      <label>
+        Role
+        <select name="role" [(ngModel)]="form.role">
+          <option value="OWNER">OWNER</option>
+          <option value="ADMIN">ADMIN</option>
+          <option value="MANAGER">MANAGER</option>
+          <option value="CHEF">CHEF</option>
+          <option value="WAITER">WAITER</option>
+          <option value="CASHIER">CASHIER</option>
+          <option value="CLEANER">CLEANER</option>
+          <option value="SECURITY">SECURITY</option>
+        </select>
+      </label>
+
+      <label class="switch">
+        <input type="checkbox" name="enabled" [(ngModel)]="form.enabled" />
+        <span>Enabled</span>
+      </label>
+
+      <button type="submit" class="primary-btn" [disabled]="saving">
+        {{ saving ? 'Saving...' : 'Add staff member' }}
+      </button>
+    </form>
+    } @else {
+      <div class="panel form access-note">
+        <h3>Manager access</h3>
+        <p>Managers can view staff accounts and update their enabled status. New staff can only be added by the owner/admin.</p>
+      </div>
+    }
+
+    <div class="panel table-panel">
+      <h3>Staff accounts</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users; track user.id) {
+            <tr>
+              <td>
+                <strong>{{ user.displayName || user.username }}</strong>
+                <div class="muted">{{ user.username }}</div>
+              </td>
+              <td>{{ user.role }}</td>
+              <td>
+                <span class="pill" [class.off]="!user.enabled">{{ user.enabled ? 'Enabled' : 'Disabled' }}</span>
+              </td>
+              <td class="mono">{{ user.createdAt | date: 'mediumDate' }}</td>
+              <td>
+                <button type="button" class="link-btn" (click)="setEnabled(user, !user.enabled)">
+                  {{ user.enabled ? 'Disable' : 'Enable' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

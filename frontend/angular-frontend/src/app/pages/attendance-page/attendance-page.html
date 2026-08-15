@@ -1,0 +1,23 @@
+<section class="attendance-workspace">
+  <header class="hero">
+    <div><span class="eyebrow">STAFF OPERATIONS</span><h1>Attendance</h1><p>Mark your team in minutes. Everything important is visible at a glance.</p></div>
+    <div class="hero-actions"><a routerLink="/attendance/report">View monthly report</a><a routerLink="/attendance/settings">Holidays & week-offs</a></div>
+  </header>
+  @if (error) { <div class="notice error">{{ error }} <button type="button" (click)="load()">Try again</button></div> }
+  @if (success) { <div class="notice success">{{ success }}</div> }
+  <div class="workspace-grid">
+    <aside class="calendar-card">
+      <div class="calendar-top"><div><span>SELECT DATE</span><h2>{{ monthLabel }}</h2></div><input type="month" [ngModel]="month" (ngModelChange)="changeMonth($event)" aria-label="Attendance month" /></div>
+      <div class="weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+      <div class="calendar">
+        @for (day of days; track $index) { @if (day) { <button type="button" [class.selected]="isSelected(day)" [class.disabled]="!canManageDay(day)" [disabled]="!canManageDay(day)" (click)="selectDate(day)" [attr.title]="canManageDay(day) ? 'Open attendance' : 'Managers can only mark attendance for today'"><b>{{ day.getDate() }}</b><small>{{ statusForDate(day) }}</small></button> } @else { <i></i> } }
+      </div>
+      @if (isManager) { <p class="manager-note">Managers can only mark attendance for today.</p> }
+    </aside>
+    <main class="team-card">
+      <div class="team-top"><div><span class="eyebrow">DAILY ATTENDANCE</span><h2>{{ selectedLabel }}</h2><p>{{ rows.length }} staff · {{ presentCount }} currently present</p></div><button type="button" class="save" (click)="save()" [disabled]="saving || !editable || loading">{{ saving ? 'Saving…' : 'Save attendance' }}</button></div>
+      @if (!editable) { <div class="read-only">This date is read-only. Managers can mark or change attendance only for today.</div> }
+      @if (loading) { <div class="loading">Loading your team…</div> } @else if (!rows.length) { <div class="loading">No eligible staff accounts found.</div> } @else { <div class="staff-list">@for (row of rows; track row.staffId) { <article class="staff-row"><div class="avatar">{{ (row.staffName || row.staffUsername).slice(0, 1) }}</div><div class="staff-name"><strong>{{ row.staffName || row.staffUsername }}</strong><span>{{ row.staffRole }} · {{ row.staffUsername }}</span></div><div class="status-options" role="group" [attr.aria-label]="'Attendance for ' + row.staffName">@for (status of statuses; track status.value) { <button type="button" [class.active]="row.status === status.value" [class]="'status ' + status.value.toLowerCase()" [disabled]="!editable" (click)="setStatus(row, status.value)" [attr.title]="status.label">{{ status.code }}</button> }</div></article> }</div> }
+    </main>
+  </div>
+</section>

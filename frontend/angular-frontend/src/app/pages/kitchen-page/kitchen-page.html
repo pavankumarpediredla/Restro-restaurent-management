@@ -1,0 +1,99 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h2>Kitchen</h2>
+      <p>Live preparation queue. New orders appear automatically; open an order number for its complete ticket.</p>
+    </div>
+    <button type="button" class="ghost-btn" (click)="load()" [disabled]="loading">Refresh</button>
+  </header>
+
+  @if (error) {
+    <div class="alert">{{ error }}</div>
+  }
+
+  <div class="kitchen-grid">
+  <div class="panel table-panel">
+    <div class="table-head">
+      <h3>Active orders</h3>
+      <span class="queue-count" [class.has-new]="newOrderCount > 0">{{ newOrderCount }} new / {{ activeOrders.length }} active</span>
+    </div>
+
+    @if (loading) {
+      <p class="muted">Loading kitchen queue...</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Placed</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of activeOrders; track order.id) {
+            <tr [class.new-ticket]="order.status === 'NEW'" [class.selected]="selectedOrder?.id === order.id">
+              <td>
+                <button type="button" class="order-link" (click)="select(order)">{{ order.orderNumber }}</button>
+                <div class="muted">{{ order.tableNumber || 'Walk-in' }}</div>
+              </td>
+              <td>
+                <strong>{{ order.customerName || 'Walk-in' }}</strong>
+                <div class="muted">{{ order.customerPhone || '-' }}</div>
+              </td>
+              <td class="items-cell">{{ itemSummary(order) }}</td>
+              <td class="mono">{{ order.createdAt | date: 'short' }}</td>
+              <td>
+                <span class="pill" [class.off]="order.status !== 'NEW'">
+                  {{ order.status }}
+                </span>
+              </td>
+              <td class="row-actions">
+                <button
+                  type="button"
+                  class="link-btn"
+                  (click)="accept(order)"
+                  [disabled]="order.status !== 'NEW' || savingId === order.id"
+                >
+                  Accept
+                </button>
+                <button type="button" class="link-btn" (click)="markReady(order)" [disabled]="order.status !== 'ACCEPTED' || savingId === order.id">Ready</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <aside class="panel ticket-detail">
+    @if (selectedOrder; as order) {
+      <div class="ticket-title">
+        <div>
+          <span class="eyebrow">Preparation ticket</span>
+          <h3>{{ order.orderNumber }}</h3>
+        </div>
+        <span class="pill" [class.off]="order.status !== 'NEW'">{{ order.status }}</span>
+      </div>
+      <p class="muted">{{ order.tableNumber || 'Walk-in' }} · {{ order.customerName || 'Walk-in customer' }}</p>
+      @if (order.notes) {
+        <div class="kitchen-note"><strong>Order note</strong><span>{{ order.notes }}</span></div>
+      }
+      <h4>Items to prepare</h4>
+      <ul class="ticket-items">
+        @for (line of order.items; track line.menuItemId) {
+          <li><span class="item-qty">{{ line.quantity }}×</span><strong>{{ line.menuItemName }}</strong></li>
+        }
+      </ul>
+      <button type="button" class="primary-btn" (click)="accept(order)" [disabled]="order.status !== 'NEW' || savingId === order.id">
+        {{ savingId === order.id ? 'Accepting...' : 'Accept ticket' }}
+      </button>
+      <button type="button" class="ghost-btn ready-btn" (click)="markReady(order)" [disabled]="order.status !== 'ACCEPTED' || savingId === order.id">Mark ready for service</button>
+    } @else {
+      <div class="empty-ticket"><span class="eyebrow">Kitchen ticket</span><h3>Select an order number</h3><p>All item quantities, table details, and special instructions will appear here.</p></div>
+    }
+  </aside>
+  </div>
+</section>

@@ -1,0 +1,18 @@
+<div class="page-head"><h2>Dashboard</h2><p>Live restaurant performance.</p></div>
+@if (loading) { <div class="state">Loading live dashboard data...</div> }
+@if (error) { <div class="state state-error">{{ error }}</div> }
+@if (summary) {
+  <div class="summary-grid">
+    <div class="summary-card"><span>Total revenue</span><strong>{{ money(summary.totalRevenue) }}</strong></div>
+    <div class="summary-card"><span>Today revenue</span><strong>{{ money(summary.todayRevenue) }}</strong></div>
+    <div class="summary-card"><span>Total orders</span><strong>{{ summary.totalOrders }}</strong></div>
+    <div class="summary-card"><span>Today orders</span><strong>{{ summary.todayOrders }}</strong></div>
+    <div class="summary-card"><span>Active items</span><strong>{{ summary.activeItems }}</strong></div>
+    <div class="summary-card"><span>Pending invoices</span><strong>{{ summary.pendingInvoices }}</strong></div>
+  </div>
+}
+<div class="two-col">
+  <section class="panel"><h3>Revenue by month</h3><div class="bars">@for (item of monthlyRevenue; track item.month) { <div><div class="bar" [style.height.%]="item.revenue / maxRevenue * 100"></div><small>{{ item.month }}</small></div> }</div></section>
+  <section class="panel"><h3>Top items</h3><table><tr><th>Item</th><th>Units</th><th>Revenue</th></tr>@for (item of topItems; track item.menuItemId) { <tr><td>{{ item.item }}</td><td>{{ item.unitsSold }}</td><td>{{ money(item.revenue) }}</td></tr> }</table></section>
+</div>
+<section class="panel"><h3>Recent orders</h3><table><tr><th>Order</th><th>Customer</th><th>Table</th><th>Total</th><th>Status</th></tr>@for (order of recentOrders; track order.id) { <tr><td>{{ order.orderNumber }}</td><td>{{ order.customerName || 'Walk-in' }}</td><td>{{ order.tableNumber || '-' }}</td><td>{{ money(order.totalAmount) }}</td><td>{{ order.status }}</td></tr> }</table></section>

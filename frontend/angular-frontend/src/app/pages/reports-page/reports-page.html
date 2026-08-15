@@ -1,0 +1,5 @@
+<div class="page-head"><h2>Reports</h2><p>Live revenue and menu performance.</p></div>
+@if (loading) { <div class="state">Loading reports...</div> } @if (error) { <div class="state state-error">{{ error }}</div> }
+@if (summary) { <div class="summary-grid"><div><span>Total revenue</span><strong>{{ money(summary.totalRevenue) }}</strong></div><div><span>Today revenue</span><strong>{{ money(summary.todayRevenue) }}</strong></div><div><span>Total orders</span><strong>{{ summary.totalOrders }}</strong></div><div><span>Today orders</span><strong>{{ summary.todayOrders }}</strong></div></div> }
+<section class="panel"><h3>Revenue trend</h3><div class="bars">@for (item of monthlyRevenue; track item.month) { <div><div class="bar" [style.height.%]="item.revenue / maxRevenue * 100"></div><small>{{ item.month }}</small></div> }</div></section>
+<section class="panel"><h3>Top selling items</h3><table><tr><th>Item</th><th>Category</th><th>Units</th><th>Revenue</th></tr>@for (item of topItems; track item.menuItemId) { <tr><td>{{ item.item }}</td><td>{{ item.category || '-' }}</td><td>{{ item.unitsSold }}</td><td>{{ money(item.revenue) }}</td></tr> }</table></section>
