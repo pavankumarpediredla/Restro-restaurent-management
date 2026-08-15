@@ -47,17 +47,16 @@ export const REMOTES: Record<string, RemoteConfig> = {
   dashboard: {
     key: 'dashboard',
     name: 'Dashboard (React)',
-    entryUrl: 'http://localhost:5173/src/mount.tsx',
-    devPreamble: () => reactViteDevPreamble('http://localhost:5173'),
+    entryUrl: 'https://restro-dashboard.netlify.app/dashboard-mf.js',
   },
   orders: {
     key: 'orders',
     name: 'Orders (Vue)',
-    entryUrl: 'http://localhost:5174/src/mount.ts',
+    entryUrl: 'https://restro-orders.netlify.app/orders-mf.js',
   },
   reports: {
     key: 'reports',
     name: 'Reports (Angular)',
-    entryUrl: 'http://localhost:4205/main.js',
+    entryUrl: 'https://restro-reports.netlify.app/main.js',
   },
 };
