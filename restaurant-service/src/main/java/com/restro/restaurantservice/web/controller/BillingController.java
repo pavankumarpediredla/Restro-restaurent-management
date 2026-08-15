@@ -20,7 +20,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/billing/invoices")
-@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'CASHIER')")
 public class BillingController {
 
 	private final BillingService billingService;

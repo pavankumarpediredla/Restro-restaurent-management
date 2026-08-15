@@ -39,7 +39,7 @@ public class MenuItemController {
 	}
 
 	@PostMapping
-	@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER')")
 	public ResponseEntity<MenuItemResponse> create(@Valid @RequestBody MenuItemRequest request) {
 		MenuItemResponse response = menuItemService.create(request);
 		URI location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -50,7 +50,7 @@ public class MenuItemController {
 	}
 
 	@PutMapping("/{id}")
-	@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER')")
 	public ResponseEntity<MenuItemResponse> update(@PathVariable Long id, @Valid @RequestBody MenuItemRequest request) {
 		return ResponseEntity.status(HttpStatus.OK).body(menuItemService.update(id, request));
 	}

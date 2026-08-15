@@ -30,13 +30,13 @@ public class OrderController {
 	}
 
 	@GetMapping
-	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'CHEF', 'KITCHEN')")
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'WAITER', 'CHEF', 'KITCHEN')")
 	public List<OrderResponse> list() {
 		return orderService.list();
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'CHEF', 'KITCHEN')")
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'WAITER', 'CHEF', 'KITCHEN')")
 	public OrderResponse get(@PathVariable Long id) {
 		return orderService.get(id);
 	}
@@ -53,13 +53,13 @@ public class OrderController {
 	}
 
 	@PostMapping("/{id}/accept")
-	@PreAuthorize("hasAnyRole('CHEF', 'KITCHEN')")
+	@PreAuthorize("hasAnyRole('OWNER', 'CHEF', 'KITCHEN')")
 	public ResponseEntity<OrderResponse> accept(@PathVariable Long id, Authentication authentication) {
 		return ResponseEntity.status(HttpStatus.OK).body(orderService.accept(id, authentication.getName()));
 	}
 
 	@PatchMapping("/{id}/ready")
-	@PreAuthorize("hasAnyRole('CHEF', 'KITCHEN')")
+	@PreAuthorize("hasAnyRole('OWNER', 'CHEF', 'KITCHEN')")
 	public ResponseEntity<OrderResponse> markReady(@PathVariable Long id) {
 		return ResponseEntity.ok(orderService.markReady(id));
 	}

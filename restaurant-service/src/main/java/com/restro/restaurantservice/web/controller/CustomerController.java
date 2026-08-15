@@ -20,7 +20,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/customers")
-@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'WAITER')")
 public class CustomerController {
 
 	private final CustomerService customerService;
