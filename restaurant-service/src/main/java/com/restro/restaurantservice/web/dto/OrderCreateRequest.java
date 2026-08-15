@@ -10,6 +10,7 @@ public record OrderCreateRequest(
 		String customerPhone,
 		String customerEmail,
 		String customerAddress,
+		Long tableId,
 		String tableNumber,
 		String notes,
 		@Valid @NotEmpty List<OrderLineRequest> items) {

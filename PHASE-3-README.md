@@ -7,13 +7,13 @@ Spring Boot service owns authentication and persistent operational data.
 ## What is included
 
 - Live login and role-based access for administrators, managers, and kitchen staff.
-- Menu and price-cycle management.
+- Menu and single-price management from Inventory.
 - Customer management and customer selection during order creation.
 - Live order creation with cart totals, notes, table numbers, and price cycles.
 - Kitchen order queue with order acceptance.
 - Invoice creation, tax/discount calculation, and payment tracking.
 - Dashboard and reports generated from saved data rather than mock arrays.
-- User administration for administrators.
+- User administration and attendance management. Managers can mark/view attendance in a calendar for non-owner/non-admin staff; only owners can edit saved attendance.
 
 ## Architecture
 
@@ -47,7 +47,8 @@ user and authentication token through that contract.
 | Role | Access |
 |---|---|
 | `ADMIN` | Dashboard, orders, inventory, billing, customers, users, and reports |
-| `MANAGER` | Dashboard, orders, inventory, billing, customers, and reports |
+| `MANAGER` | Dashboard, orders, inventory, billing, customers, reports, and marking/viewing attendance for non-owner/non-admin staff |
+| `OWNER` | Full access, including editing saved attendance records |
 | `KITCHEN` | Kitchen queue and order acceptance |
 
 ## Local setup
@@ -94,6 +95,7 @@ Open `http://localhost:4200` and sign in with the local development account.
 |---|---|
 | Authentication | `/api/auth` |
 | Users | `/api/users` |
+| Attendance | `/api/attendance` |
 | Menu items | `/api/v1/items` |
 | Orders | `/api/v1/orders` |
 | Customers | `/api/customers` |

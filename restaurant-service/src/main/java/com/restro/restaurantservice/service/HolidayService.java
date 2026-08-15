@@ -1,0 +1,8 @@
+package com.restro.restaurantservice.service;
+import com.restro.restaurantservice.domain.entity.Holiday; import com.restro.restaurantservice.domain.exception.ResourceNotFoundException; import com.restro.restaurantservice.repository.HolidayRepository; import com.restro.restaurantservice.web.dto.HolidayRequest; import com.restro.restaurantservice.web.dto.HolidayResponse; import java.time.LocalDate; import java.util.List; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional;
+@Service public class HolidayService { private final HolidayRepository repository; public HolidayService(HolidayRepository repository) { this.repository = repository; }
+ @Transactional(readOnly=true) public List<HolidayResponse> list(LocalDate from, LocalDate to) { return repository.findByHolidayDateBetweenOrderByHolidayDate(from,to).stream().map(this::map).toList(); }
+ @Transactional public HolidayResponse create(HolidayRequest request) { return map(repository.save(new Holiday(request.holidayDate(), request.name().trim(), request.description()))); }
+ @Transactional public HolidayResponse update(Long id, HolidayRequest request) { Holiday value=repository.findById(id).orElseThrow(()->new ResourceNotFoundException("Holiday not found: "+id)); value.update(request.name().trim(),request.description()); return map(value); }
+ @Transactional public void delete(Long id) { repository.delete(repository.findById(id).orElseThrow(()->new ResourceNotFoundException("Holiday not found: "+id))); }
+ private HolidayResponse map(Holiday value) { return new HolidayResponse(value.getId(),value.getHolidayDate(),value.getName(),value.getDescription()); } }

@@ -11,3 +11,21 @@
 .row-actions {
   white-space: nowrap;
 }
+
+.kitchen-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(280px, .85fr); gap: 16px; }
+.queue-count { font-size: 12px; color: var(--ink-soft); }
+.queue-count.has-new { color: var(--rust); font-weight: 700; }
+.new-ticket { background: rgba(198, 138, 59, .10); }
+tr.selected { outline: 2px solid rgba(95, 122, 90, .4); outline-offset: -2px; }
+.order-link { border: 0; padding: 0; background: transparent; color: var(--ember); font: inherit; font-weight: 700; cursor: pointer; }
+.ticket-detail { align-self: start; position: sticky; top: 16px; }
+.ticket-title { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.ticket-title h3, .empty-ticket h3 { margin: 3px 0 0; }
+.eyebrow { color: var(--ink-soft); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.kitchen-note { display: flex; flex-direction: column; gap: 5px; margin: 16px 0; padding: 12px; border-left: 3px solid var(--ember); background: rgba(198, 138, 59, .10); font-size: 13px; }
+.ticket-items { list-style: none; padding: 0; margin: 10px 0 18px; }
+.ticket-items li { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.item-qty { min-width: 36px; padding: 4px 6px; text-align: center; border-radius: 4px; color: var(--paper); background: var(--char); font: 700 12px var(--font-mono); }
+.empty-ticket { color: var(--ink-soft); }
+.ready-btn { width: 100%; margin-top: 8px; }
+@media (max-width: 1000px) { .kitchen-grid { grid-template-columns: 1fr; } .ticket-detail { position: static; } }

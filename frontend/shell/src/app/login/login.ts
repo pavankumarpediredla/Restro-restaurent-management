@@ -26,7 +26,7 @@ export class Login {
 
     if (ok) {
       const role = this.auth.currentUser()?.role;
-      this.router.navigate([role === 'KITCHEN' ? '/kitchen' : '/dashboard']);
+      this.router.navigate([role === 'CHEF' || role === 'KITCHEN' ? '/kitchen' : '/dashboard']);
     } else {
       this.error.set('Enter a valid username and password.');
     }

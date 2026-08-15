@@ -10,6 +10,10 @@ import { KitchenPage } from './pages/kitchen-page/kitchen-page';
 import { CustomersPage } from './pages/customers-page/customers-page';
 import { UsersPage } from './pages/users-page/users-page';
 import { ReportsPage } from './pages/reports-page/reports-page';
+import { AttendancePage } from './pages/attendance-page/attendance-page';
+import { AttendanceReportPage } from './pages/attendance-report/attendance-report-page';
+import { AttendanceSettingsPage } from './pages/attendance-settings/attendance-settings-page';
+import { TablesPage } from './pages/tables-page/tables-page';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -52,8 +56,22 @@ export const routes: Routes = [
         path: 'users',
         component: UsersPage,
         canActivate: [roleGuard],
-        data: { roles: ['ADMIN'] },
+        data: { roles: ['ADMIN', 'MANAGER'] },
       },
+      { path: 'tables', component: TablesPage, canActivate: [roleGuard], data: { roles: ['OWNER', 'ADMIN', 'MANAGER', 'WAITER', 'CASHIER'] } },
+      {
+        path: 'attendance',
+        component: AttendancePage,
+        canActivate: [roleGuard],
+        data: { roles: ['OWNER', 'MANAGER'] },
+      },
+      {
+        path: 'attendance/report',
+        component: AttendanceReportPage,
+        canActivate: [roleGuard],
+        data: { roles: ['OWNER', 'MANAGER'] },
+      },
+      { path: 'attendance/settings', component: AttendanceSettingsPage, canActivate: [roleGuard], data: { roles: ['OWNER', 'MANAGER'] } },
       {
         path: 'kitchen',
         component: KitchenPage,

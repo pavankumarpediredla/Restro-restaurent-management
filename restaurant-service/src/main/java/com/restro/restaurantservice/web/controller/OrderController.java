@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,19 +30,19 @@ public class OrderController {
 	}
 
 	@GetMapping
-	@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'KITCHEN')")
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'CHEF', 'KITCHEN')")
 	public List<OrderResponse> list() {
 		return orderService.list();
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'KITCHEN')")
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'CHEF', 'KITCHEN')")
 	public OrderResponse get(@PathVariable Long id) {
 		return orderService.get(id);
 	}
 
 	@PostMapping
-	@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'WAITER')")
 	public ResponseEntity<OrderResponse> create(@Valid @RequestBody OrderCreateRequest request, Authentication authentication) {
 		OrderResponse response = orderService.create(authentication.getName(), request);
 		URI location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -52,8 +53,14 @@ public class OrderController {
 	}
 
 	@PostMapping("/{id}/accept")
-	@PreAuthorize("hasRole('KITCHEN')")
+	@PreAuthorize("hasAnyRole('CHEF', 'KITCHEN')")
 	public ResponseEntity<OrderResponse> accept(@PathVariable Long id, Authentication authentication) {
 		return ResponseEntity.status(HttpStatus.OK).body(orderService.accept(id, authentication.getName()));
+	}
+
+	@PatchMapping("/{id}/ready")
+	@PreAuthorize("hasAnyRole('CHEF', 'KITCHEN')")
+	public ResponseEntity<OrderResponse> markReady(@PathVariable Long id) {
+		return ResponseEntity.ok(orderService.markReady(id));
 	}
 }

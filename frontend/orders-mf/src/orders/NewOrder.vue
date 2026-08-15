@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
+import TableSelector, { type RestaurantTable } from './TableSelector.vue';
 
 interface Props {
   token?: string | null;
@@ -11,7 +12,6 @@ interface Props {
 }
 
 interface MenuPrice {
-  cycle: 'DAILY' | 'WEEKLY' | 'MONTHLY';
   amount: number;
 }
 
@@ -36,7 +36,6 @@ interface Customer {
 interface CartLine {
   item: MenuItem;
   qty: number;
-  cycle: MenuPrice['cycle'];
 }
 
 const API_BASE = 'http://localhost:8081';
@@ -50,6 +49,7 @@ const props = defineProps<Props>();
 
 const menu = ref<MenuItem[]>([]);
 const customers = ref<Customer[]>([]);
+const tables = ref<RestaurantTable[]>([]);
 const cart = ref<CartLine[]>([]);
 const loading = ref(true);
 const saving = ref(false);
@@ -57,7 +57,7 @@ const error = ref('');
 const submitted = ref(false);
 
 const form = reactive({
-  tableNumber: '',
+  tableId: '' as number | '',
   notes: '',
   customerId: '' as number | '',
   customerName: '',
@@ -71,7 +71,7 @@ const selectedCustomer = computed(() =>
   customers.value.find((customer) => String(customer.id) === String(form.customerId)),
 );
 const total = computed(() =>
-  cart.value.reduce((sum, line) => sum + priceFor(line.item, line.cycle) * line.qty, 0),
+  cart.value.reduce((sum, line) => sum + priceFor(line.item) * line.qty, 0),
 );
 function headers(): HeadersInit {
   const value: Record<string, string> = {
@@ -94,12 +94,8 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-function priceFor(item: MenuItem, cycle: MenuPrice['cycle']): number {
-  return item.prices.find((price) => price.cycle === cycle)?.amount ?? item.prices[0]?.amount ?? 0;
-}
-
-function cycleOptions(item: MenuItem): MenuPrice[] {
-  return item.prices;
+function priceFor(item: MenuItem): number {
+  return item.prices[0]?.amount ?? 0;
 }
 
 function trimOrNull(value: string): string | null {
@@ -116,7 +112,6 @@ function addItem(item: MenuItem): void {
   cart.value.push({
     item,
     qty: 1,
-    cycle: item.prices[0]?.cycle ?? 'DAILY',
   });
 }
 
@@ -144,13 +139,15 @@ async function load(): Promise<void> {
       throw new Error('Login through the shell to load live order data.');
     }
 
-    const [items, customerList] = await Promise.all([
+    const [items, customerList, tableList] = await Promise.all([
       fetchJson<MenuItem[]>('/api/v1/items', { headers: headers() }),
       fetchJson<Customer[]>('/api/customers', { headers: headers() }),
+      fetchJson<RestaurantTable[]>('/api/v1/tables', { headers: headers() }),
     ]);
 
     menu.value = items.filter((item) => item.active);
     customers.value = customerList;
+    tables.value = tableList;
 
     if (!form.customerId && activeCustomers.value.length > 0) {
       form.customerId = activeCustomers.value[0].id;
@@ -181,19 +178,19 @@ async function submitOrder(): Promise<void> {
         customerPhone: useExistingCustomer ? null : trimOrNull(form.customerPhone),
         customerEmail: useExistingCustomer ? null : trimOrNull(form.customerEmail),
         customerAddress: useExistingCustomer ? null : trimOrNull(form.customerAddress),
-        tableNumber: trimOrNull(form.tableNumber),
+        tableId: form.tableId === '' ? null : Number(form.tableId),
         notes: trimOrNull(form.notes),
         items: cart.value.map((line) => ({
           menuItemId: line.item.id,
           quantity: line.qty,
-          priceCycle: line.cycle,
+          priceCycle: 'DAILY',
         })),
       }),
     });
 
     submitted.value = true;
     cart.value = [];
-    form.tableNumber = '';
+    form.tableId = '';
     form.notes = '';
     form.customerName = '';
     form.customerPhone = '';
@@ -237,9 +234,7 @@ onMounted(() => {
           <span class="menu-item-name">{{ item.name }}</span>
           <span class="menu-item-desc">{{ item.description || 'No description' }}</span>
           <div class="price-row">
-            <span class="price-chip" v-for="price in item.prices" :key="price.cycle">
-              {{ price.cycle }} {{ currency.format(price.amount) }}
-            </span>
+            <span class="price-chip">{{ currency.format(priceFor(item)) }}</span>
           </div>
           <span class="menu-item-action">Add to order</span>
         </button>
@@ -254,8 +249,8 @@ onMounted(() => {
 
       <div class="meta-grid">
         <label>
-          Table number
-          <input type="text" v-model="form.tableNumber" placeholder="T12 or Takeaway" />
+          Table
+          <TableSelector v-model="form.tableId" :tables="tables" />
         </label>
 
         <label>
@@ -305,20 +300,15 @@ onMounted(() => {
         <li v-for="(line, index) in cart" :key="line.item.id">
           <div class="cart-line-info">
             <strong>{{ line.item.name }}</strong>
-            <span class="cart-line-meta">{{ currency.format(priceFor(line.item, line.cycle)) }} each</span>
+            <span class="cart-line-meta">{{ currency.format(priceFor(line.item)) }} each</span>
           </div>
           <div class="cart-controls">
-            <select v-model="line.cycle">
-              <option v-for="price in cycleOptions(line.item)" :key="price.cycle" :value="price.cycle">
-                {{ price.cycle }}
-              </option>
-            </select>
             <div class="qty-stepper">
               <button type="button" @click="decrementLine(index)">-</button>
               <span>{{ line.qty }}</span>
               <button type="button" @click="incrementLine(index)">+</button>
             </div>
-            <span class="mono">{{ currency.format(priceFor(line.item, line.cycle) * line.qty) }}</span>
+            <span class="mono">{{ currency.format(priceFor(line.item) * line.qty) }}</span>
             <button type="button" class="link-btn" @click="removeLine(index)">Remove</button>
           </div>
         </li>

@@ -2,7 +2,7 @@
   <header class="page-head">
     <div>
       <h2>Inventory</h2>
-      <p>Manage menu items, availability, and cycle-based pricing.</p>
+      <p>Manage menu items, availability, and menu prices.</p>
     </div>
     <button type="button" class="ghost-btn" (click)="load()" [disabled]="loading">Refresh</button>
   </header>
@@ -37,18 +37,10 @@
         </label>
       </div>
 
-      <div class="price-grid">
+      <div>
         <label>
-          Daily
-          <input type="number" name="dailyPrice" [(ngModel)]="form.dailyPrice" min="0" step="0.01" />
-        </label>
-        <label>
-          Weekly
-          <input type="number" name="weeklyPrice" [(ngModel)]="form.weeklyPrice" min="0" step="0.01" />
-        </label>
-        <label>
-          Monthly
-          <input type="number" name="monthlyPrice" [(ngModel)]="form.monthlyPrice" min="0" step="0.01" />
+          Menu price (INR)
+          <input type="number" name="price" [(ngModel)]="form.price" min="0.01" step="0.01" required />
         </label>
       </div>
 
@@ -75,9 +67,7 @@
               <th>Item</th>
               <th>Category</th>
               <th>Availability</th>
-              <th>Daily</th>
-              <th>Weekly</th>
-              <th>Monthly</th>
+              <th>Price</th>
               <th></th>
             </tr>
           </thead>
@@ -92,9 +82,7 @@
                 <td>
                   <span class="pill" [class.off]="!item.active">{{ item.active ? 'Available' : 'Hidden' }}</span>
                 </td>
-                <td class="mono">{{ formatPrice(item, 'DAILY') }}</td>
-                <td class="mono">{{ formatPrice(item, 'WEEKLY') }}</td>
-                <td class="mono">{{ formatPrice(item, 'MONTHLY') }}</td>
+                <td class="mono">{{ formatPrice(item) }}</td>
                 <td class="row-actions">
                   <button type="button" class="link-btn" (click)="edit(item)">Edit</button>
                   <button type="button" class="link-btn" (click)="setActive(item, !item.active)">

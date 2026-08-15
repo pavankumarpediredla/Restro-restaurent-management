@@ -10,9 +10,7 @@ interface ItemForm {
   description: string;
   category: string;
   active: boolean;
-  dailyPrice: number | null;
-  weeklyPrice: number | null;
-  monthlyPrice: number | null;
+  price: number | null;
 }
 
 @Component({
@@ -48,18 +46,14 @@ export class InventoryPage implements OnInit {
   }
 
   edit(item: MenuItem): void {
-    const daily = item.prices.find((price) => price.cycle === 'DAILY')?.amount ?? null;
-    const weekly = item.prices.find((price) => price.cycle === 'WEEKLY')?.amount ?? null;
-    const monthly = item.prices.find((price) => price.cycle === 'MONTHLY')?.amount ?? null;
+    const price = item.prices.find((entry) => entry.cycle === 'DAILY')?.amount ?? item.prices[0]?.amount ?? null;
     this.form = {
       id: item.id,
       name: item.name,
       description: item.description ?? '',
       category: item.category ?? '',
       active: item.active,
-      dailyPrice: daily,
-      weeklyPrice: weekly,
-      monthlyPrice: monthly,
+      price,
     };
   }
 
@@ -71,20 +65,9 @@ export class InventoryPage implements OnInit {
     if (!this.form.name.trim()) {
       return;
     }
-    const prices = [
-      { cycle: 'DAILY', amount: this.form.dailyPrice },
-      { cycle: 'WEEKLY', amount: this.form.weeklyPrice },
-      { cycle: 'MONTHLY', amount: this.form.monthlyPrice },
-    ]
-      .filter((price) => price.amount !== null && price.amount !== undefined)
-      .map((price) => ({
-        cycle: price.cycle,
-        amount: Number(price.amount),
-      }))
-      .filter((price) => !Number.isNaN(price.amount));
-
-    if (prices.length === 0) {
-      this.error = 'Add at least one price cycle before saving the item.';
+    const amount = Number(this.form.price);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      this.error = 'Enter a menu price greater than zero before saving the item.';
       return;
     }
 
@@ -95,7 +78,7 @@ export class InventoryPage implements OnInit {
       description: this.form.description.trim() || null,
       category: this.form.category.trim() || null,
       active: this.form.active,
-      prices,
+      prices: [{ cycle: 'DAILY', amount }],
     };
 
     try {
@@ -125,8 +108,9 @@ export class InventoryPage implements OnInit {
     await this.load();
   }
 
-  formatPrice(item: MenuItem, cycle: string): string {
-    return item.prices.find((price) => price.cycle === cycle)?.amount.toFixed(2) ?? '-';
+  formatPrice(item: MenuItem): string {
+    const price = item.prices.find((entry) => entry.cycle === 'DAILY') ?? item.prices[0];
+    return price ? price.amount.toFixed(2) : '-';
   }
 
   private emptyForm(): ItemForm {
@@ -136,9 +120,7 @@ export class InventoryPage implements OnInit {
       description: '',
       category: '',
       active: true,
-      dailyPrice: null,
-      weeklyPrice: null,
-      monthlyPrice: null,
+      price: null,
     };
   }
 }

@@ -24,10 +24,12 @@ public class BillingService {
 
 	private final InvoiceRepository invoiceRepository;
 	private final RestaurantOrderRepository orderRepository;
+	private final TableService tableService;
 
-	public BillingService(InvoiceRepository invoiceRepository, RestaurantOrderRepository orderRepository) {
+	public BillingService(InvoiceRepository invoiceRepository, RestaurantOrderRepository orderRepository, TableService tableService) {
 		this.invoiceRepository = invoiceRepository;
 		this.orderRepository = orderRepository;
+		this.tableService = tableService;
 	}
 
 	@Transactional
@@ -63,6 +65,7 @@ public class BillingService {
 		Invoice invoice = requireInvoice(id);
 		invoice.setStatus(InvoiceStatus.PAID);
 		invoice.setPaidAt(Instant.now());
+		tableService.releaseAfterOrder(invoice.getOrder().getRestaurantTable());
 		return map(invoice);
 	}
 

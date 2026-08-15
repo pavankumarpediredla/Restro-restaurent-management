@@ -1,0 +1,3 @@
+package com.restro.restaurantservice.web.controller;
+import com.restro.restaurantservice.service.AttendanceService; import com.restro.restaurantservice.web.dto.AttendanceReportResponse; import java.time.YearMonth; import org.springframework.security.access.prepost.PreAuthorize; import org.springframework.web.bind.annotation.*;
+@RestController @RequestMapping("/api/attendance/staff") public class StaffAttendanceController { private final AttendanceService service; public StaffAttendanceController(AttendanceService service){this.service=service;} @GetMapping("/{staffId}/report") @PreAuthorize("isAuthenticated()") public AttendanceReportResponse report(@PathVariable Long staffId,@RequestParam YearMonth month){return service.staffReport(staffId,month);} }

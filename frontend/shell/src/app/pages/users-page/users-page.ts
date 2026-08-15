@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
+import { AuthService } from '../../core/auth.service';
 import { AppUser, Role } from '../../core/models';
 
 interface UserForm {
@@ -26,7 +27,12 @@ export class UsersPage implements OnInit {
   error = '';
   form: UserForm = this.emptyForm();
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private auth: AuthService) {}
+
+  get canCreateStaff(): boolean {
+    const role = this.auth.currentUser()?.role;
+    return role === 'OWNER' || role === 'ADMIN';
+  }
 
   ngOnInit(): void {
     void this.load();

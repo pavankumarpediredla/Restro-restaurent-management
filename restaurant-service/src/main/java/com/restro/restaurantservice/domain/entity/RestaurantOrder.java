@@ -38,6 +38,10 @@ public class RestaurantOrder {
 	@Column(length = 50)
 	private String tableNumber;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "table_id")
+	private RestaurantTable restaurantTable;
+
 	@Column(length = 100)
 	private String customerName;
 
@@ -105,6 +109,9 @@ public class RestaurantOrder {
 	public void setTableNumber(String tableNumber) {
 		this.tableNumber = tableNumber;
 	}
+
+	public RestaurantTable getRestaurantTable() { return restaurantTable; }
+	public void setRestaurantTable(RestaurantTable restaurantTable) { this.restaurantTable = restaurantTable; }
 
 	public String getCustomerName() {
 		return customerName;

@@ -8,7 +8,7 @@ export interface AuthUser {
   id: number;
   username: string;
   displayName: string;
-  role: 'ADMIN' | 'MANAGER' | 'KITCHEN';
+  role: 'OWNER' | 'ADMIN' | 'MANAGER' | 'CHEF' | 'WAITER' | 'CASHIER' | 'CLEANER' | 'SECURITY' | 'KITCHEN';
   enabled: boolean;
 }
 

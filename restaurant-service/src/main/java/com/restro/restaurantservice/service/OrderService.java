@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.springframework.data.domain.Sort;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,16 +36,22 @@ public class OrderService {
 	private final MenuItemRepository menuItemRepository;
 	private final AppUserRepository userRepository;
 	private final CustomerService customerService;
+	private final TableService tableService;
+	private final KafkaTemplate<String, String> kafkaTemplate;
 
 	public OrderService(
 			RestaurantOrderRepository orderRepository,
 			MenuItemRepository menuItemRepository,
 			AppUserRepository userRepository,
-			CustomerService customerService) {
+			CustomerService customerService,
+			TableService tableService,
+			KafkaTemplate<String, String> kafkaTemplate) {
 		this.orderRepository = orderRepository;
 		this.menuItemRepository = menuItemRepository;
 		this.userRepository = userRepository;
 		this.customerService = customerService;
+		this.tableService = tableService;
+		this.kafkaTemplate = kafkaTemplate;
 	}
 
 	@Transactional
@@ -61,7 +68,13 @@ public class OrderService {
 		order.setStatus(OrderStatus.NEW);
 		order.setCreatedBy(creator);
 		order.setCustomer(customer);
-		order.setTableNumber(trimToNull(request.tableNumber()));
+		if (request.tableId() != null) {
+			var table = tableService.claimForOrder(request.tableId(), username);
+			order.setRestaurantTable(table);
+			order.setTableNumber(table.getTableNumber());
+		} else {
+			order.setTableNumber(trimToNull(request.tableNumber()));
+		}
 		order.setCustomerName(customer == null ? trimToNull(request.customerName()) : customer.getFullName());
 		order.setCustomerPhone(customer == null ? trimToNull(request.customerPhone()) : customer.getPhone());
 		order.setNotes(trimToNull(request.notes()));
@@ -75,7 +88,9 @@ public class OrderService {
 		}
 		order.replaceLines(lines);
 		order.setTotalAmount(normalizeAmount(total));
-		return toResponse(orderRepository.save(order));
+		OrderResponse response = toResponse(orderRepository.save(order));
+		publishOrderCreated(response);
+		return response;
 	}
 
 	@Transactional(readOnly = true)
@@ -109,10 +124,10 @@ public class OrderService {
 			throw new BusinessRuleException("Menu item is inactive: " + menuItem.getName());
 		}
 
-		PriceCycle cycle = request.priceCycle() == null ? PriceCycle.DAILY : request.priceCycle();
+		PriceCycle cycle = PriceCycle.DAILY;
 		ItemPrice price = menuItem.findPrice(cycle)
-				.orElseThrow(() -> new BusinessRuleException(
-						"No " + cycle + " price configured for menu item: " + menuItem.getName()));
+				.orElseGet(() -> menuItem.getPrices().stream().findFirst().orElseThrow(() ->
+						new BusinessRuleException("No price configured for menu item: " + menuItem.getName())));
 
 		OrderLine line = new OrderLine();
 		line.setMenuItem(menuItem);
@@ -179,5 +194,29 @@ public class OrderService {
 
 	private String generateOrderNumber() {
 		return "ORD-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+	}
+
+	@Transactional
+	public OrderResponse markReady(Long id) {
+		RestaurantOrder order = findOrder(id);
+		if (order.getStatus() != OrderStatus.ACCEPTED) {
+			throw new BusinessRuleException("Only accepted orders can be marked ready.");
+		}
+		order.setStatus(OrderStatus.READY);
+		return toResponse(order);
+	}
+
+	private void publishOrderCreated(OrderResponse order) {
+		String event = "{\"type\":\"ORDER_CREATED\",\"orderId\":" + order.id()
+				+ ",\"orderNumber\":\"" + order.orderNumber() + "\",\"tableNumber\":\""
+				+ (order.tableNumber() == null ? "" : order.tableNumber()) + "\",\"items\":" + order.items().size() + "}";
+		kafkaTemplate.send("restro.order-events", order.id().toString(), event)
+				.whenComplete((result, error) -> {
+					if (error != null) {
+						// Kafka availability must never block order creation.
+						org.slf4j.LoggerFactory.getLogger(OrderService.class)
+								.warn("Order event was not delivered for {}", order.orderNumber());
+					}
+				});
 	}
 }

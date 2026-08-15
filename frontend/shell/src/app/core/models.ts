@@ -1,4 +1,4 @@
-export type Role = 'ADMIN' | 'MANAGER' | 'KITCHEN';
+export type Role = 'OWNER' | 'ADMIN' | 'MANAGER' | 'CHEF' | 'WAITER' | 'CASHIER' | 'CLEANER' | 'SECURITY' | 'KITCHEN';
 
 export interface AppUser {
   id: number;
@@ -54,7 +54,7 @@ export interface OrderCreateRequest {
 export interface Order {
   id: number;
   orderNumber: string;
-  status: 'NEW' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED';
+  status: 'NEW' | 'ACCEPTED' | 'READY' | 'REJECTED' | 'CANCELLED';
   customerId?: number | null;
   customerName?: string | null;
   customerPhone?: string | null;
@@ -135,4 +135,30 @@ export interface RecentOrder {
   totalAmount: number;
   status: 'NEW' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED';
   createdAt: string;
+}
+
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'HOLIDAY' | 'WEEK_OFF' | 'LEAVE' | 'LEAVE_WITHOUT_PAY' | 'NOT_AVAILABLE';
+
+export interface AttendanceRecord {
+  id: number | null;
+  staffId: number;
+  staffName: string;
+  staffUsername: string;
+  staffRole: Role;
+  staffEnabled?: boolean;
+  attendanceDate: string | null;
+  status: AttendanceStatus | null;
+  note: string | null;
+}
+
+export interface AttendanceDay {
+  attendanceDate: string;
+  records: AttendanceRecord[];
+}
+
+export interface AttendanceCalendarDay {
+  attendanceDate: string;
+  present: number;
+  absent: number;
+  leave: number;
 }

@@ -12,11 +12,7 @@ import com.restro.restaurantservice.web.dto.MenuItemRequest;
 import com.restro.restaurantservice.web.dto.MenuItemResponse;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,30 +67,33 @@ public class MenuItemService {
 		} else if (request.active() != null) {
 			item.setActive(request.active());
 		}
-		item.replacePrices(buildPrices(item, request.prices()));
+		applyStandardPrice(item, request.prices());
 	}
 
-	private List<ItemPrice> buildPrices(MenuItem item, List<ItemPriceRequest> priceRequests) {
-		Set<PriceCycle> seen = new HashSet<>();
-		List<ItemPrice> prices = new ArrayList<>();
-		for (ItemPriceRequest priceRequest : priceRequests) {
-			if (!seen.add(priceRequest.cycle())) {
-				throw new BusinessRuleException("Duplicate price cycle on menu item: " + priceRequest.cycle());
-			}
-			ItemPrice price = new ItemPrice();
-			price.setCycle(priceRequest.cycle());
-			price.setAmount(normalizeAmount(priceRequest.amount()));
-			price.setMenuItem(item);
-			prices.add(price);
+	private void applyStandardPrice(MenuItem item, List<ItemPriceRequest> priceRequests) {
+		if (priceRequests.size() != 1) {
+			throw new BusinessRuleException("A menu item must have exactly one standard price.");
 		}
-		return prices;
+		ItemPriceRequest request = priceRequests.getFirst();
+		ItemPrice price = item.findPrice(PriceCycle.DAILY)
+				.orElseGet(() -> item.getPrices().stream().findFirst().orElse(null));
+		if (price == null) {
+			price = new ItemPrice();
+			item.addPrice(price);
+		}
+		// DAILY is retained internally for backwards-compatible order history.
+		price.setCycle(PriceCycle.DAILY);
+		price.setAmount(normalizeAmount(request.amount()));
+		ItemPrice selectedPrice = price;
+		item.getPrices().removeIf(existing -> existing != selectedPrice);
 	}
 
 	private MenuItemResponse toResponse(MenuItem item) {
-		List<ItemPriceResponse> prices = item.getPrices().stream()
-				.sorted(Comparator.comparing(ItemPrice::getCycle))
-				.map(price -> new ItemPriceResponse(price.getCycle(), normalizeAmount(price.getAmount())))
-				.toList();
+		ItemPrice currentPrice = item.findPrice(PriceCycle.DAILY)
+				.orElseGet(() -> item.getPrices().stream().findFirst().orElse(null));
+		List<ItemPriceResponse> prices = currentPrice == null
+				? List.of()
+				: List.of(new ItemPriceResponse(PriceCycle.DAILY, normalizeAmount(currentPrice.getAmount())));
 		return new MenuItemResponse(
 				item.getId(),
 				item.getName(),

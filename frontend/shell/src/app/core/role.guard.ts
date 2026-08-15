@@ -13,7 +13,7 @@ export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot, _state: 
     return false;
   }
 
-  if (allowedRoles.length === 0 || allowedRoles.includes(user.role)) {
+  if (user.role === 'OWNER' || allowedRoles.length === 0 || allowedRoles.includes(user.role)) {
     return true;
   }
 

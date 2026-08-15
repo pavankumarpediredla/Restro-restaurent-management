@@ -20,7 +20,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/users")
-@PreAuthorize("hasRole('ADMIN')")
 public class UserController {
 
 	private final UserService userService;
@@ -30,16 +29,19 @@ public class UserController {
 	}
 
 	@GetMapping
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
 	public List<UserResponse> list() {
 		return userService.list();
 	}
 
 	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
 	public UserResponse get(@PathVariable Long id) {
 		return userService.get(id);
 	}
 
 	@PostMapping
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
 	public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest request) {
 		UserResponse response = userService.create(request);
 		URI location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -50,6 +52,7 @@ public class UserController {
 	}
 
 	@PatchMapping("/{id}/enabled")
+	@PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
 	public ResponseEntity<UserResponse> updateEnabled(@PathVariable Long id, @RequestBody boolean enabled) {
 		return ResponseEntity.status(HttpStatus.OK).body(userService.setEnabled(id, enabled));
 	}
