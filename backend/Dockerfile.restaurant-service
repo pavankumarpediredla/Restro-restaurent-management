@@ -1,0 +1,15 @@
+# Build from repository root: docker build -f backend/Dockerfile.restaurant-service .
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /workspace
+COPY restaurant-service/pom.xml restaurant-service/pom.xml
+RUN mvn -f restaurant-service/pom.xml -B dependency:go-offline
+COPY restaurant-service/src restaurant-service/src
+RUN mvn -f restaurant-service/pom.xml -B -DskipTests package
+
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+RUN addgroup --system restro && adduser --system --ingroup restro restro
+COPY --from=build /workspace/restaurant-service/target/restaurant-service-*.jar app.jar
+USER restro
+EXPOSE 8081
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
