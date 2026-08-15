@@ -33,7 +33,7 @@ const currency = new Intl.NumberFormat('en-IN', {
 async function fetchJson<T>(path: string, token?: string | null): Promise<T> {
   const headers: HeadersInit = {};
   if (token) {
-    headers.Authorization = token;
+    headers['Authorization'] = token;
   }
 
   const response = await fetch(`${API_BASE}${path}`, { headers });

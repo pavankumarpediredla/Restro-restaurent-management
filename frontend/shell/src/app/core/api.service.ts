@@ -47,7 +47,7 @@ export class ApiService {
     };
     const token = this.auth.token;
     if (token) {
-      headers.Authorization = token;
+      headers['Authorization'] = token;
     }
     return headers;
   }

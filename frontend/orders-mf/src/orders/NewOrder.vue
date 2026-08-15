@@ -73,8 +73,6 @@ const selectedCustomer = computed(() =>
 const total = computed(() =>
   cart.value.reduce((sum, line) => sum + priceFor(line.item, line.cycle) * line.qty, 0),
 );
-const displayName = computed(() => props.user?.displayName || props.user?.username || 'team');
-
 function headers(): HeadersInit {
   const value: Record<string, string> = {
     'Content-Type': 'application/json',

@@ -7,19 +7,17 @@ Spring Boot microservice for restaurant orders and menu items.
 - `ADMIN` and `MANAGER`: create and update menu items, create orders.
 - `KITCHEN`: view orders and accept orders.
 
-## Default users
+## Local login
 
-- `admin / admin123`
-- `manager / manager123`
-- `kitchen / kitchen123`
+With the `local` profile, the service starts with an H2 database and seeds one
+development account: `admin / admin123`. Configure a different bootstrap
+account with these environment variables (recommended outside local use):
 
-You can override the passwords through environment variables:
+- `RESTRO_BOOTSTRAP_ADMIN_USERNAME`
+- `RESTRO_BOOTSTRAP_ADMIN_PASSWORD`
+- `RESTRO_BOOTSTRAP_ADMIN_NAME`
 
-- `RESTRO_ADMIN_PASSWORD`
-- `RESTRO_MANAGER_PASSWORD`
-- `RESTRO_KITCHEN_PASSWORD`
-
-## SQL Server config
+## MySQL config
 
 Set these before starting the service:
 
@@ -27,9 +25,11 @@ Set these before starting the service:
 - `DB_USERNAME`
 - `DB_PASSWORD`
 
-If you do not set them yet, the app still has placeholders in `application.properties` and the test profile uses H2.
+If you do not set them yet, the app uses the connection defaults in
+`application.properties`. The `local` profile uses an in-memory H2 database.
 
-For local startup before SQL Server is ready, run with the `local` Spring profile. That uses H2 in SQL Server compatibility mode:
+The `local` profile is the default for a plain IDE launch. To select it
+explicitly before MySQL is ready, run with `SPRING_PROFILES_ACTIVE=local`.
 
 - `SPRING_PROFILES_ACTIVE=local`
 

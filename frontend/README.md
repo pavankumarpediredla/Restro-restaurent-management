@@ -96,10 +96,8 @@ Upload each remote's single JS file to a CDN or static host, then update
 `shell/src/app/core/remote.config.ts` to point `entryUrl` at the production
 URLs instead of `localhost`. Rebuild and redeploy the Shell.
 
-## What's mock vs real right now
+## Data and API
 
-Everything is running on hard-coded mock data (menu items, orders, revenue
-numbers) so the UI is fully clickable without a backend. Every mock data
-spot has a comment showing exactly which REST endpoint replaces it once the
-backend (see the separate `restro-pos-build-guide.md` for the Spring Boot
-microservices) is running behind the API gateway.
+The UI reads and writes live data through `restaurant-service` at
+`http://localhost:8081`. Menu items, customers, orders, kitchen acceptance,
+invoices, users, dashboard metrics, and reports are backed by REST APIs.
