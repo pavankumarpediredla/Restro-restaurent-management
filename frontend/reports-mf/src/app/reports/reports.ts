@@ -23,7 +23,9 @@ interface TopItemRow {
   revenue: number;
 }
 
-const API_BASE = 'http://localhost:8081';
+const API_BASE = window.location.hostname === 'localhost'
+  ? 'http://localhost:8081'
+  : 'https://restro-restaurent-management.onrender.com';
 const currency = new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',

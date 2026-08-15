@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 
-const API_BASE = 'http://localhost:8081';
+const API_BASE = window.location.hostname === 'localhost'
+  ? 'http://localhost:8081'
+  : 'https://restro-restaurent-management.onrender.com';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {

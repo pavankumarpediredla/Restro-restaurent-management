@@ -3,6 +3,9 @@ import { Router } from '@angular/router';
 
 const TOKEN_KEY = 'restro_token';
 const USER_KEY = 'restro_user';
+const API_BASE = window.location.hostname === 'localhost'
+  ? 'http://localhost:8081'
+  : 'https://restro-restaurent-management.onrender.com';
 
 export interface AuthUser {
   id: number;
@@ -27,7 +30,7 @@ export class AuthService {
   }
 
   login(username: string, password: string): Promise<boolean> {
-    return fetch('http://localhost:8081/api/auth/login', {
+    return fetch(`${API_BASE}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
