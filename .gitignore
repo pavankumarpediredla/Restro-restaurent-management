@@ -1,0 +1,16 @@
+# Local deployment secrets
+backend/.env
+/restro-pos-backend/discovery-server/.idea/.gitignore
+/restro-pos-backend/discovery-server/target/surefire-reports/2026-08-02T21-19-47_804.dumpstream
+/restro-pos-backend/discovery-server/target/classes/application.properties
+/restro-pos-backend/discovery-server/target/surefire-reports/com.restro.discovery_server.DiscoveryServerApplicationTests.txt
+/restro-pos-backend/discovery-server/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+/restro-pos-backend/discovery-server/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst
+/restro-pos-backend/discovery-server/target/classes/com/restro/discovery_server/DiscoveryServerApplication.class
+/restro-pos-backend/discovery-server/target/test-classes/com/restro/discovery_server/DiscoveryServerApplicationTests.class
+/restro-pos-backend/discovery-server/HELP.md
+/restro-pos-backend/discovery-server/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
+/restro-pos-backend/discovery-server/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst
+/restro-pos-backend/discovery-server/.idea/misc.xml
+/restro-pos-backend/discovery-server/target/surefire-reports/TEST-com.restro.discovery_server.DiscoveryServerApplicationTests.xml
+/restro-pos-backend/discovery-server/.idea/vcs.xml
