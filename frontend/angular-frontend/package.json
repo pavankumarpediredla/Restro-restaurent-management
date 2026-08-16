@@ -1,6 +1,11 @@
 {
   "name": "restro-angular-frontend",
   "version": "0.0.0",
+  "overrides": {
+    "body-parser": {
+      "content-type": "2.0.0"
+    }
+  },
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
