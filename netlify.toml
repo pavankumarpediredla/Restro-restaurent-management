@@ -1,7 +1,7 @@
 [build]
 base = "frontend/angular-frontend"
 command = "npm run build"
-publish = "dist/restro-angular-frontend"
+publish = "dist/restro-angular-frontend/browser"
 
 [build.environment]
 NODE_VERSION = "22.19.0"
